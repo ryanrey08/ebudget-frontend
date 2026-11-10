@@ -1,5 +1,6 @@
 import { api } from "@/store/services/api";
-import { ENDPOINTS } from "@/lib/api/endpoints";
+import { fromService } from "@/lib/api/client";
+import { obligationsService } from "@/services/obligations.service";
 import type { MessageResponse, Paginated } from "@/types/api";
 import type {
   Obligation,
@@ -22,53 +23,50 @@ const AFFECTED = [
   "Dashboard" as const,
 ];
 
+/** RTK Query cache for obligations; requests are made by obligationsService. */
 export const obligationsApi = api.injectEndpoints({
   endpoints: (build) => ({
     getObligations: build.query<Paginated<Obligation>, ObligationListParams>({
-      query: (params) => ({ url: ENDPOINTS.obligations.list, params }),
+      queryFn: (params) => fromService(() => obligationsService.getAll(params)),
       providesTags: (result) => [
         { type: "Obligation", id: "LIST" },
         ...(result?.items.map((o) => ({ type: "Obligation" as const, id: o.id })) ?? []),
       ],
     }),
     getObligationSummary: build.query<ObligationSummary, { fiscalYear: number }>({
-      query: (params) => ({ url: ENDPOINTS.obligations.summary, params }),
+      queryFn: (params) => fromService(() => obligationsService.getSummary(params)),
       providesTags: [{ type: "Obligation", id: "SUMMARY" }],
     }),
     getObligationLookups: build.query<ObligationLookups, void>({
-      query: () => ENDPOINTS.obligations.lookups,
+      queryFn: () => fromService(() => obligationsService.getLookups()),
       providesTags: [{ type: "Obligation", id: "LOOKUPS" }],
     }),
     getNextObligationNumber: build.query<{ referenceNo: string }, { fiscalYear: number }>({
-      query: (params) => ({ url: ENDPOINTS.obligations.nextNumber, params }),
+      queryFn: (params) => fromService(() => obligationsService.getNextNumber(params)),
       providesTags: [{ type: "Obligation", id: "LIST" }],
     }),
     getObligation: build.query<ObligationDetail, string>({
-      query: (id) => ENDPOINTS.obligations.detail(id),
+      queryFn: (id) => fromService(() => obligationsService.getById(id)),
       providesTags: (_r, _e, id) => [{ type: "Obligation", id }],
     }),
     uploadObligationDocument: build.mutation<ObligationDocument, File>({
-      query: (file) => {
-        const body = new FormData();
-        body.append("file", file);
-        return { url: ENDPOINTS.obligations.documents, method: "POST", body };
-      },
+      queryFn: (file) => fromService(() => obligationsService.uploadDocument(file)),
     }),
     createObligation: build.mutation<Obligation, ObligationInput>({
-      query: (body) => ({ url: ENDPOINTS.obligations.list, method: "POST", body }),
+      queryFn: (body) => fromService(() => obligationsService.create(body)),
       invalidatesTags: [...AFFECTED, { type: "Obligation", id: "LOOKUPS" }],
     }),
     updateObligation: build.mutation<Obligation, ObligationInput & { id: string }>({
-      query: ({ id, ...body }) => ({ url: ENDPOINTS.obligations.detail(id), method: "PUT", body }),
+      queryFn: (arg) => fromService(() => obligationsService.update(arg)),
       invalidatesTags: (_r, _e, { id }) => [{ type: "Obligation", id }, ...AFFECTED],
     }),
     obligationWorkflow: build.mutation<ObligationDetail, ObligationWorkflowRequest>({
-      query: ({ id, ...body }) => ({ url: ENDPOINTS.obligations.workflow(id), method: "POST", body }),
+      queryFn: (arg) => fromService(() => obligationsService.workflow(arg)),
       invalidatesTags: (_r, _e, { id, action }) =>
         action === "saveRemarks" ? [{ type: "Obligation", id }] : [{ type: "Obligation", id }, ...AFFECTED],
     }),
     deleteObligation: build.mutation<MessageResponse, string>({
-      query: (id) => ({ url: ENDPOINTS.obligations.detail(id), method: "DELETE" }),
+      queryFn: (id) => fromService(() => obligationsService.delete(id)),
       invalidatesTags: AFFECTED,
     }),
   }),

@@ -8,7 +8,7 @@ import type {
   ResetPasswordRequest,
   User,
 } from "@/features/auth/types";
-import type { ChangePasswordRequest, UpdateProfileRequest } from "@/features/settings/services/profileApi";
+import type { ChangePasswordRequest, UpdateProfileRequest } from "@/features/settings/types";
 import { db } from "../services/db";
 import { MockHttpError, route } from "../services/http";
 import { clearMockSession, getMockSessionUserId, setMockSession } from "../services/session";

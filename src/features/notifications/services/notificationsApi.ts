@@ -1,16 +1,17 @@
 import { api } from "@/store/services/api";
-import { ENDPOINTS } from "@/lib/api/endpoints";
+import { fromService } from "@/lib/api/client";
+import { notificationsService } from "@/services/settings.service";
 import type { MessageResponse } from "@/types/api";
 import type { AppNotification } from "../types";
 
 export const notificationsApi = api.injectEndpoints({
   endpoints: (build) => ({
     getNotifications: build.query<AppNotification[], void>({
-      query: () => ENDPOINTS.notifications.list,
+      queryFn: () => fromService(() => notificationsService.getAll()),
       providesTags: ["Notification"],
     }),
     markNotificationRead: build.mutation<MessageResponse, string>({
-      query: (id) => ({ url: ENDPOINTS.notifications.read(id), method: "PATCH" }),
+      queryFn: (id) => fromService(() => notificationsService.markRead(id)),
       // Optimistic update so the badge reacts immediately.
       async onQueryStarted(id, { dispatch, queryFulfilled }) {
         const patch = dispatch(
@@ -23,7 +24,7 @@ export const notificationsApi = api.injectEndpoints({
       },
     }),
     markAllNotificationsRead: build.mutation<MessageResponse, void>({
-      query: () => ({ url: ENDPOINTS.notifications.readAll, method: "POST" }),
+      queryFn: () => fromService(() => notificationsService.markAllRead()),
       invalidatesTags: ["Notification"],
     }),
   }),

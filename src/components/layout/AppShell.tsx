@@ -9,6 +9,7 @@ import { useGetCurrentUserQuery } from "@/features/auth/services/authApi";
 import { REDIRECT_PARAM } from "@/lib/auth/session";
 import { ROUTES } from "@/lib/constants/routes";
 import { Spinner } from "@/components/ui/Spinner";
+import { ErrorState } from "@/components/shared/ErrorState";
 import { cn } from "@/lib/utils/cn";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
@@ -23,13 +24,23 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const status = useAppSelector(selectAuthStatus);
   const collapsed = useAppSelector(selectSidebarCollapsed);
-  useGetCurrentUserQuery();
+  const session = useGetCurrentUserQuery();
 
   useEffect(() => {
     if (status === "unauthenticated") {
       router.replace(`${ROUTES.login}?${REDIRECT_PARAM}=${encodeURIComponent(pathname)}`);
     }
   }, [status, router, pathname]);
+
+  // The session check failed for a reason other than an invalid session
+  // (backend unreachable, timeout, server error): show it instead of redirecting.
+  if (status === "checking" && session.isError && !session.isFetching) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <ErrorState error={session.error} onRetry={session.refetch} />
+      </div>
+    );
+  }
 
   if (status !== "authenticated") {
     return (

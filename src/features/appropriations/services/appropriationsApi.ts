@@ -1,5 +1,6 @@
 import { api } from "@/store/services/api";
-import { ENDPOINTS } from "@/lib/api/endpoints";
+import { fromService } from "@/lib/api/client";
+import { appropriationsService } from "@/services/appropriations.service";
 import type { MessageResponse, Paginated } from "@/types/api";
 import type {
   Appropriation,
@@ -10,32 +11,29 @@ import type {
   CreateAppropriationRequest,
 } from "../types";
 
+/** RTK Query cache for appropriations; requests are made by appropriationsService. */
 export const appropriationsApi = api.injectEndpoints({
   endpoints: (build) => ({
     getAppropriations: build.query<Paginated<Appropriation>, AppropriationListParams>({
-      query: (params) => ({ url: ENDPOINTS.appropriations.list, params }),
+      queryFn: (params) => fromService(() => appropriationsService.getAll(params)),
       providesTags: (result) => [
         { type: "Appropriation", id: "LIST" },
         ...(result?.items.map((a) => ({ type: "Appropriation" as const, id: a.id })) ?? []),
       ],
     }),
     getAppropriationSummary: build.query<AppropriationSummary, { fiscalYear: number }>({
-      query: (params) => ({ url: ENDPOINTS.appropriations.summary, params }),
+      queryFn: (params) => fromService(() => appropriationsService.getSummary(params)),
       providesTags: [{ type: "Appropriation", id: "SUMMARY" }],
     }),
     getAppropriationLookups: build.query<AppropriationLookups, void>({
-      query: () => ENDPOINTS.appropriations.lookups,
+      queryFn: () => fromService(() => appropriationsService.getLookups()),
       providesTags: [{ type: "Appropriation", id: "LOOKUPS" }],
     }),
     uploadAppropriationDocument: build.mutation<AppropriationDocument, File>({
-      query: (file) => {
-        const body = new FormData();
-        body.append("file", file);
-        return { url: ENDPOINTS.appropriations.documents, method: "POST", body };
-      },
+      queryFn: (file) => fromService(() => appropriationsService.uploadDocument(file)),
     }),
     createAppropriation: build.mutation<Appropriation, CreateAppropriationRequest>({
-      query: (body) => ({ url: ENDPOINTS.appropriations.list, method: "POST", body }),
+      queryFn: (body) => fromService(() => appropriationsService.create(body)),
       invalidatesTags: [
         { type: "Appropriation", id: "LIST" },
         { type: "Appropriation", id: "SUMMARY" },
@@ -44,7 +42,7 @@ export const appropriationsApi = api.injectEndpoints({
       ],
     }),
     deleteAppropriation: build.mutation<MessageResponse, string>({
-      query: (id) => ({ url: ENDPOINTS.appropriations.detail(id), method: "DELETE" }),
+      queryFn: (id) => fromService(() => appropriationsService.delete(id)),
       invalidatesTags: [{ type: "Appropriation", id: "LIST" }, { type: "Appropriation", id: "SUMMARY" }, "Dashboard"],
     }),
   }),

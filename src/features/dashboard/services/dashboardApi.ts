@@ -1,15 +1,16 @@
 import { api } from "@/store/services/api";
-import { ENDPOINTS } from "@/lib/api/endpoints";
+import { fromService } from "@/lib/api/client";
+import { dashboardService } from "@/services/dashboard.service";
 import type { DashboardOverview, Transaction } from "../types";
 
 export const dashboardApi = api.injectEndpoints({
   endpoints: (build) => ({
     getDashboardOverview: build.query<DashboardOverview, { fiscalYear: number }>({
-      query: (params) => ({ url: ENDPOINTS.dashboard.overview, params }),
+      queryFn: (params) => fromService(() => dashboardService.getOverview(params)),
       providesTags: ["Dashboard"],
     }),
     getRecentTransactions: build.query<Transaction[], { fiscalYear: number; limit?: number }>({
-      query: (params) => ({ url: ENDPOINTS.dashboard.recentTransactions, params }),
+      queryFn: (params) => fromService(() => dashboardService.getRecentTransactions(params)),
       providesTags: ["Dashboard"],
     }),
   }),

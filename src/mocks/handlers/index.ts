@@ -5,6 +5,17 @@ import { authHandlers } from "./auth";
 import { budgetHandlers } from "./budget";
 import { gaaHandlers } from "./gaa";
 import { obligationHandlers } from "./obligations";
+import { reportGenerationHandlers } from "./report-generation";
 import { reportingHandlers } from "./reporting";
 
-export const mockRoutes: MockRoute[] = [...authHandlers, ...appropriationHandlers, ...allotmentHandlers, ...obligationHandlers, ...budgetHandlers, ...gaaHandlers, ...reportingHandlers];
+/** Every mock route, matched in order by src/mocks/mock-api.ts. */
+export const mockRoutes: MockRoute[] = [
+  ...authHandlers,
+  ...appropriationHandlers,
+  ...allotmentHandlers,
+  ...obligationHandlers,
+  ...budgetHandlers,
+  ...gaaHandlers,
+  ...reportGenerationHandlers,
+  ...reportingHandlers,
+];

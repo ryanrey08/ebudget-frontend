@@ -29,6 +29,7 @@ import {
 import { ParamSelect, QproMainFields, validateQproParams, type QproField } from "./QproParamFields";
 import { emptyParams } from "./QproView";
 import type { QproParams, QproReport } from "./types";
+import { useRecordGeneration } from "../hooks/useRecordGeneration";
 
 const FORMATS: { value: ReportFormat; label: string; hint: string }[] = [
   { value: "pdf", label: "PDF", hint: "(Recommended for submission)" },
@@ -79,6 +80,7 @@ function Radio<T extends string>({ name, legend, value, onChange, items }: { nam
 export function QproGenerator() {
   const router = useRouter();
   const notify = useNotify();
+  const recordGeneration = useRecordGeneration("bfars-1");
   const user = useAppSelector(selectCurrentUser);
   const fy = useFiscalYear();
   const [params, setParams] = useState<QproParams>(() => emptyParams(fy));
@@ -157,6 +159,7 @@ export function QproGenerator() {
         downloadFile(qproFileName(report, "doc"), toWordDocument(doc.html), "application/msword");
         notify("success", "Report generated", `${qproFileName(report, "doc")} was downloaded.`);
       }
+      recordGeneration(params, format);
     } catch (err) {
       notify("error", "Unable to generate the report", getErrorMessage(err));
     } finally {

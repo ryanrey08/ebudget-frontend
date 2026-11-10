@@ -58,12 +58,27 @@ export const ENDPOINTS = {
   },
   bfars: {
     report: (id: string) => `/bfars/${id}`,
+    /** Records a generated BFARS report in the report history. */
+    generate: (id: string) => `/bfars/${id}/generate`,
+    /** Previously generated copies of a BFARS report. */
+    generated: (id: string) => `/bfars/${id}/generated`,
     qpro: "/bfars/bfars-1/qpro",
+    saaodb: "/bfars/bfars-2/saaodb",
+    saaodboe: "/bfars/bfars-3/saaodboe",
+    lasa: "/bfars/bfars-4/lasa",
+    sodlbiaft: "/bfars/bfars-5/sodlbiaft",
+    sabudb: "/bfars/bfars-6/sabudb",
+    sabudboe: "/bfars/bfars-7/sabudboe",
+    auo: "/bfars/bfars-8/auo",
+    mrd: "/bfars/bfars-9/mrd",
+    qrror: "/bfars/bfars-10/qrror",
+    sabudbtr: "/bfars/bfars-11/sabudbtr",
   },
   reports: {
     list: "/reports",
     history: "/reports/history",
     generate: "/reports/generate",
+    download: (id: string) => `/reports/history/${id}/download`,
   },
   profile: {
     me: "/profile",

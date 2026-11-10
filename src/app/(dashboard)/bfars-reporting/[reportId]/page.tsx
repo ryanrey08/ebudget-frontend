@@ -9,8 +9,8 @@ type Props = { params: Promise<{ reportId: string }> };
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  // BFARS 1 has its own route folder (bfars-1/).
-  return BFARS_REPORTS.filter((r) => r.id !== "bfars-1").map((r) => ({ reportId: r.id }));
+  // BFARS 1–11 have their own route folders.
+  return BFARS_REPORTS.filter((r) => !["bfars-1", "bfars-2", "bfars-3", "bfars-4", "bfars-5", "bfars-6", "bfars-7", "bfars-8", "bfars-9", "bfars-10", "bfars-11"].includes(r.id)).map((r) => ({ reportId: r.id }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

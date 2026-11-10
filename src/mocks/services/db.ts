@@ -1,3 +1,5 @@
+import { apiConfig } from "@/config/api.config";
+import { registerMockDb } from "./persistence";
 import type { Allotment } from "@/features/allotments/types";
 import type {
   Appropriation,
@@ -111,4 +113,27 @@ export function getMockSessionUserName() {
   const userId = getMockSessionUserId();
   const user = db.users.find((u) => u.user.id === userId)?.user;
   return user ? `${user.firstName} ${user.lastName}` : "Unknown user";
+}
+
+/** Tables saved when NEXT_PUBLIC_MOCK_API_PERSIST=true (see ./persistence.ts). */
+const PERSISTED_TABLES = [
+  "users",
+  "appropriations",
+  "allotments",
+  "obligations",
+  "gaaBatches",
+  "gaaRows",
+  "gaaColumns",
+  "gaaResults",
+  "notifications",
+  "reportHistory",
+] as const;
+
+if (apiConfig.mockPersist) {
+  const saved = registerMockDb(() => Object.fromEntries(PERSISTED_TABLES.map((k) => [k, db[k]])));
+  if (saved) {
+    for (const key of PERSISTED_TABLES) {
+      if (key in saved) (db as Record<string, unknown>)[key] = saved[key];
+    }
+  }
 }

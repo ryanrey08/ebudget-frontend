@@ -139,8 +139,8 @@ export function toWordDocument(html: string) {
   return html.replace("<html>", '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">');
 }
 
-export function downloadFile(fileName: string, content: string, mime: string) {
-  const url = URL.createObjectURL(new Blob([content], { type: mime }));
+export function downloadFile(fileName: string, content: string | Uint8Array, mime: string) {
+  const url = URL.createObjectURL(new Blob([content as BlobPart], { type: mime }));
   const link = document.createElement("a");
   link.href = url;
   link.download = fileName;

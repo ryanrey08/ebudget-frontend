@@ -1,19 +1,20 @@
 import { api } from "@/store/services/api";
-import { ENDPOINTS } from "@/lib/api/endpoints";
-import type { GenerateReportRequest, GeneratedReport, ReportCategory, ReportDefinition } from "../types";
+import { fromService } from "@/lib/api/client";
+import { reportsService, type ReportListParams } from "@/services/reports.service";
+import type { GenerateReportRequest, GeneratedReport, ReportDefinition } from "../types";
 
 export const reportsApi = api.injectEndpoints({
   endpoints: (build) => ({
-    getReports: build.query<ReportDefinition[], { category?: ReportCategory | ""; search?: string }>({
-      query: (params) => ({ url: ENDPOINTS.reports.list, params }),
+    getReports: build.query<ReportDefinition[], ReportListParams>({
+      queryFn: (params) => fromService(() => reportsService.getAll(params)),
       providesTags: [{ type: "Report", id: "LIST" }],
     }),
     getReportHistory: build.query<GeneratedReport[], void>({
-      query: () => ENDPOINTS.reports.history,
+      queryFn: () => fromService(() => reportsService.getHistory()),
       providesTags: [{ type: "Report", id: "HISTORY" }],
     }),
     generateReport: build.mutation<GeneratedReport, GenerateReportRequest>({
-      query: (body) => ({ url: ENDPOINTS.reports.generate, method: "POST", body }),
+      queryFn: (body) => fromService(() => reportsService.generate(body)),
       invalidatesTags: [
         { type: "Report", id: "HISTORY" },
         { type: "Report", id: "LIST" },

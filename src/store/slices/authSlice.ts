@@ -2,6 +2,13 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { authApi } from "@/features/auth/services/authApi";
 import { profileApi } from "@/features/settings/services/profileApi";
 import type { User } from "@/features/auth/types";
+import { codeForStatus, isApiError } from "@/lib/api/api-error";
+import type { ApiError } from "@/types/api";
+
+const isSessionError = (error: ApiError) => {
+  const code = error.code ?? codeForStatus(error.status);
+  return code === "UNAUTHORIZED" || code === "FORBIDDEN" || code === "NOT_FOUND";
+};
 
 /**
  * Client-side view of the session. This is display state only: the backend
@@ -38,6 +45,9 @@ const authSlice = createSlice({
       })
       .addMatcher(authApi.endpoints.getCurrentUser.matchRejected, (state, action) => {
         if (action.meta.condition) return; // skipped because a request is already in flight
+        // Backend unreachable or failing: the session may still be valid, so keep
+        // checking (AppShell shows a connection error with retry) instead of signing out.
+        if (isApiError(action.payload) && !isSessionError(action.payload)) return;
         state.status = "unauthenticated";
         state.user = null;
       })

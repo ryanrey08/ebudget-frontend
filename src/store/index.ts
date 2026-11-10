@@ -6,9 +6,10 @@ import uiSlice from "./slices/uiSlice";
 import filtersSlice from "./slices/filtersSlice";
 import alertsSlice from "./slices/alertsSlice";
 import gaaWizardSlice from "@/features/appropriations/state/gaaWizardSlice";
+import sabudbtrSlice from "@/features/bfars-reporting/sabudbtr/sabudbtrSlice";
 import { apiErrorListener } from "./middleware/apiErrorListener";
 
-const rootReducer = combineSlices(api, authSlice, uiSlice, filtersSlice, alertsSlice, gaaWizardSlice);
+const rootReducer = combineSlices(api, authSlice, uiSlice, filtersSlice, alertsSlice, gaaWizardSlice, sabudbtrSlice);
 
 /**
  * Store factory. A new store is created per request/browser session by

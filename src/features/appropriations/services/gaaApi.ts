@@ -1,5 +1,6 @@
 import { api } from "@/store/services/api";
-import { ENDPOINTS } from "@/lib/api/endpoints";
+import { fromService } from "@/lib/api/client";
+import { gaaService } from "@/services/appropriations.service";
 import type { MessageResponse } from "@/types/api";
 import type {
   GaaRow,
@@ -11,41 +12,37 @@ import type {
   UploadGaaRequest,
 } from "../types";
 
+/** RTK Query cache for the GAA Upload workflow; requests are made by gaaService. */
 export const gaaApi = api.injectEndpoints({
   endpoints: (build) => ({
     getGaaUploads: build.query<GaaUploadBatch[], void>({
-      query: () => ENDPOINTS.gaa.uploads,
+      queryFn: () => fromService(() => gaaService.getUploads()),
       providesTags: (result) => [
         { type: "GaaUpload", id: "LIST" },
         ...(result?.map((b) => ({ type: "GaaUpload" as const, id: b.id })) ?? []),
       ],
     }),
     getGaaUpload: build.query<GaaUploadBatch, string>({
-      query: (id) => ENDPOINTS.gaa.upload(id),
+      queryFn: (id) => fromService(() => gaaService.getUpload(id)),
       providesTags: (_r, _e, id) => [{ type: "GaaUpload", id }],
     }),
     getGaaRows: build.query<GaaRow[], string>({
-      query: (id) => ENDPOINTS.gaa.rows(id),
+      queryFn: (id) => fromService(() => gaaService.getRows(id)),
       providesTags: (_r, _e, id) => [{ type: "GaaUpload", id: `${id}-rows` }],
     }),
     getGaaColumns: build.query<GaaSourceColumn[], string>({
-      query: (id) => ENDPOINTS.gaa.columns(id),
+      queryFn: (id) => fromService(() => gaaService.getColumns(id)),
     }),
     getGaaImportResult: build.query<ImportGaaResponse, string>({
-      query: (id) => ENDPOINTS.gaa.import(id),
+      queryFn: (id) => fromService(() => gaaService.getImportResult(id)),
       providesTags: (_r, _e, id) => [{ type: "GaaUpload", id: `${id}-result` }],
     }),
     uploadGaa: build.mutation<GaaUploadBatch, UploadGaaRequest>({
-      query: ({ file, fiscalYear }) => {
-        const body = new FormData();
-        body.append("file", file);
-        body.append("fiscalYear", String(fiscalYear));
-        return { url: ENDPOINTS.gaa.uploads, method: "POST", body };
-      },
+      queryFn: (arg) => fromService(() => gaaService.upload(arg)),
       invalidatesTags: [{ type: "GaaUpload", id: "LIST" }],
     }),
     validateGaa: build.mutation<GaaValidationSummary, string>({
-      query: (id) => ({ url: ENDPOINTS.gaa.validate(id), method: "POST" }),
+      queryFn: (id) => fromService(() => gaaService.validate(id)),
       invalidatesTags: (_r, _e, id) => [
         { type: "GaaUpload", id },
         { type: "GaaUpload", id: `${id}-rows` },
@@ -53,7 +50,7 @@ export const gaaApi = api.injectEndpoints({
       ],
     }),
     importGaa: build.mutation<ImportGaaResponse, ImportGaaRequest>({
-      query: ({ id, ...body }) => ({ url: ENDPOINTS.gaa.import(id), method: "POST", body }),
+      queryFn: (arg) => fromService(() => gaaService.import(arg)),
       invalidatesTags: (_r, _e, { id }) => [
         { type: "GaaUpload", id: "LIST" },
         { type: "GaaUpload", id },
@@ -64,7 +61,7 @@ export const gaaApi = api.injectEndpoints({
       ],
     }),
     deleteGaaUpload: build.mutation<MessageResponse, string>({
-      query: (id) => ({ url: ENDPOINTS.gaa.upload(id), method: "DELETE" }),
+      queryFn: (id) => fromService(() => gaaService.delete(id)),
       invalidatesTags: [{ type: "GaaUpload", id: "LIST" }],
     }),
   }),

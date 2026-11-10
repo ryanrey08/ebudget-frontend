@@ -1,0 +1,18 @@
+# BFARS 10 (Quarterly Report of Revenue and Other Receipts): implementation notes
+
+## What was built
+- **`/bfars-reporting/bfars-10`**: the dashboard from "eBudget BFARS 10 Revenue Dashboard". Fiscal Year, Quarter, Department/Office, Revenue Classification and UACS (Major) filters with Generate Report; Total Revenue and Other Receipts (change vs. the same quarter of the previous fiscal year) and Income from Operations / Non-Operations / Other Receipts cards (amount, share, bar); "Quarterly Revenue Trend" grouped bars for the quarter's three months with value labels, the classification donut; the details table (search, pagination, TOTAL row) with Export to Excel, Export to PDF and Print. A "Report Generator" button opens the generator.
+- **`/bfars-reporting/bfars-10/generate`**: Report Parameters, Display Options (Include Summary Page, Include Detailed Transactions, Group by Revenue Classification, Show Previous Quarter Comparison, Include Signatories Page), Output Format (PDF / XLSX / XLS) and the live A4-landscape preview (page navigation, zoom, download, print, full screen), as in BFARS 4–9.
+- The printed report follows "eBudget BFARS 10 Report Preview": "BFARS Form 10 / Annex J" header, parameter block, "For the Quarter Ending March 31, 2026", the Current Quarter (months + total) / Year-to-Date (total, % of total) matrix by classification (4-01, 4-02, 4-03) with TOTAL, both charts (inline SVG), then the transaction listing on its own page, and Prepared by / Reviewed by / Certified Correct.
+
+## Files
+New: `src/features/bfars-reporting/qrror/{types.ts, document.ts, QrrorParamFields.tsx, QrrorCharts.tsx, QrrorView.tsx, QrrorGenerator.tsx}`, `src/mocks/data/qrror.ts`, `src/app/(dashboard)/bfars-reporting/bfars-10/page.tsx` and `.../generate/page.tsx`.
+Additions to shared files: `lib/api/endpoints.ts` (`bfars.qrror`), `services/bfarsApi.ts` (`useGetQrrorReportQuery`), `mocks/handlers/reporting.ts` (QRROR handler), `[reportId]/page.tsx` (bfars-10 excluded from the generic viewer), `docs/API.md`.
+
+## Assumptions
+1. **Amounts follow MPC_BFARS10_QRROR_Sample_Q1_2026.** Its 12 receipts give ₱85M (Operations 60M, Non-Operations 20M, Other Receipts 5M; January 27M, February 29M, March 29M). The dashboard mockup's KPIs and donut agree; its bar chart (25/18/4, 28/20/5, 32/22/6 = ₱160M) and the report mockup's monthly matrix (also ₱160M, with 85M/60M/15M quarter totals) don't add up to ₱85M, so charts and the matrix are computed from the receipts. The mockup's 10 detail rows differ from the workbook (e.g. a "Jan 25, 2024" date); the workbook's 12 rows are used.
+2. **Quarters 2–4** reuse the Q1 receipts with dates shifted and amounts scaled (Q2 ×0.7, Q3 ×1.1, Q4 ×0.8), like BFARS 4. FY 2025/2024 are scaled like the other BFARS reports (×0.92 / ×0.85), so the KPI reads +8.7% vs. Q1 2025 (₱78.2M), not the mockup's +12.5% (₱75,555,000).
+3. **Comparisons**: the dashboard KPI compares with the same quarter of the previous fiscal year (as the mockup's "vs. Q1 2025"); the report's "Show Previous Quarter Comparison" compares with the preceding quarter (Q4 of the previous year for Q1).
+4. **UACS (Major)** lists the sample workbook's nine account codes (4-01-01 Tuition Fees … 4-03-03 Refunds and Reimbursements), narrowed to the selected Revenue Classification. The workbook marks these codes as placeholders that need validation.
+5. **% of Total** in the report is the classification's share of the year-to-date total.
+6. **Department/Office** isn't a column in the references, so each receipt has an illustrative office used only by the filter. Signatory names come from the app's user records. PDF output opens the print dialog (Save as PDF).

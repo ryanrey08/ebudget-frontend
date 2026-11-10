@@ -1,27 +1,24 @@
 import { api } from "@/store/services/api";
-import { ENDPOINTS } from "@/lib/api/endpoints";
+import { fromService } from "@/lib/api/client";
+import { settingsService } from "@/services/settings.service";
 import type { MessageResponse } from "@/types/api";
 import type { User } from "@/features/auth/types";
+import type { ChangePasswordRequest, UpdateProfileRequest } from "../types";
 
-export type UpdateProfileRequest = Pick<User, "firstName" | "lastName" | "email" | "phone" | "position" | "office">;
-
-export interface ChangePasswordRequest {
-  currentPassword: string;
-  newPassword: string;
-}
+export type { ChangePasswordRequest, UpdateProfileRequest } from "../types";
 
 export const profileApi = api.injectEndpoints({
   endpoints: (build) => ({
     getProfile: build.query<User, void>({
-      query: () => ENDPOINTS.profile.me,
+      queryFn: () => fromService(() => settingsService.getProfile()),
       providesTags: ["Profile"],
     }),
     updateProfile: build.mutation<User, UpdateProfileRequest>({
-      query: (body) => ({ url: ENDPOINTS.profile.me, method: "PATCH", body }),
+      queryFn: (body) => fromService(() => settingsService.updateProfile(body)),
       invalidatesTags: ["Profile", "Auth"],
     }),
     changePassword: build.mutation<MessageResponse, ChangePasswordRequest>({
-      query: (body) => ({ url: ENDPOINTS.profile.changePassword, method: "POST", body }),
+      queryFn: (body) => fromService(() => settingsService.changePassword(body)),
     }),
   }),
 });

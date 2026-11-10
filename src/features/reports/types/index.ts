@@ -18,7 +18,9 @@ export interface GeneratedReport {
   reportId: string;
   reportName: string;
   period: string;
-  format: "PDF" | "XLSX" | "CSV";
+  format: "PDF" | "XLSX" | "DOCX" | "CSV";
+  /** Parameters used to generate the report (BFARS generators). */
+  parameters?: Record<string, unknown>;
   generatedAt: string;
   generatedBy: string;
   status: "Ready" | "Processing";
