@@ -78,9 +78,9 @@ describe("api client in real mode", () => {
   it("attaches the bearer token when one is set, but not with skipAuth", async () => {
     fetchMock.mockImplementation(() => Promise.resolve(jsonResponse({})));
     setAuthToken("test-token");
-    await apiClient.get("/auth/me");
+    await apiClient.get("/dashboard/overview");
     expect(fetchMock.mock.calls[0][1].headers.get("Authorization")).toBe("Bearer test-token");
-    await apiClient.post("/auth/login", {}, { skipAuth: true });
+    await apiClient.post("/dashboard/overview", {}, { skipAuth: true });
     expect(fetchMock.mock.calls[1][1].headers.get("Authorization")).toBeNull();
   });
 
@@ -135,5 +135,39 @@ describe("api client in real mode", () => {
     fetchMock.mockResolvedValue(new Response("<html>Bad Gateway</html>", { status: 502, headers: { "content-type": "text/html" } }));
     const error = await apiClient.get("/dashboard/overview").catch(toPlainApiError);
     expect(error).toMatchObject({ status: 502, message: "The eBudget server is unavailable. Please try again later." });
+  });
+
+  it("sends /auth/* to the same-origin auth proxy in real auth mode", async () => {
+    setApiSettings({ mode: "mock", authMode: "real", baseUrl: BASE, timeoutMs: 1000 });
+    fetchMock.mockResolvedValue(jsonResponse({ data: { id: "01J", name: "Ana" } }));
+    const me = await apiClient.get<{ name: string }>("/auth/me");
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/auth/me");
+    expect(fetchMock.mock.calls[0][1].credentials).toBe("same-origin");
+    expect(me.name).toBe("Ana"); // { data } resource wrapper is unwrapped
+  });
+
+  it("reads the backend's problem-details errors", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(
+        {
+          type: "about:blank",
+          title: "Unprocessable Content",
+          status: 422,
+          code: "validation_failed",
+          detail: "The given data was invalid.",
+          request_id: "abc",
+          errors: { email: ["These credentials do not match our records."] },
+        },
+        422,
+        { "content-type": "application/problem+json" },
+      ),
+    );
+    const error = await apiClient.post("/obligations", {}).catch(toPlainApiError);
+    expect(error).toMatchObject({
+      status: 422,
+      code: "VALIDATION",
+      message: "The given data was invalid.",
+      fieldErrors: { email: "These credentials do not match our records." },
+    });
   });
 });

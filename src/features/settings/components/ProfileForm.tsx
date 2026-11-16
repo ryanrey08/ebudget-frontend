@@ -11,11 +11,11 @@ import { FormAlert } from "@/components/forms/FormAlert";
 import { applyServerErrors } from "@/components/forms/applyServerErrors";
 import { useNotify } from "@/hooks/useNotify";
 import { getErrorMessage } from "@/lib/api/error-handler";
-import type { User } from "@/features/auth/types";
+import type { StaffProfile } from "../types";
 import { useUpdateProfileMutation } from "../services/profileApi";
 import { profileSchema, type ProfileValues } from "../schemas";
 
-const pick = (u: User): ProfileValues => ({
+const pick = (u: StaffProfile): ProfileValues => ({
   firstName: u.firstName,
   lastName: u.lastName,
   email: u.email,
@@ -24,7 +24,7 @@ const pick = (u: User): ProfileValues => ({
   office: u.office,
 });
 
-export function ProfileForm({ user }: { user: User }) {
+export function ProfileForm({ user }: { user: StaffProfile }) {
   const notify = useNotify();
   const [update, { isLoading, error }] = useUpdateProfileMutation();
   const {

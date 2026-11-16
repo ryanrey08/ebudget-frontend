@@ -1,6 +1,6 @@
 import { ENDPOINTS } from "@/lib/api/endpoints";
 import { ALLOTMENT_CLASS_CODES } from "@/lib/constants/allotment-classes";
-import { ROLE_LABELS } from "@/features/auth/types";
+import { STAFF_ROLE_LABELS } from "@/features/settings/types";
 import {
   OBLIGATION_STEPS,
   type Obligation,
@@ -38,7 +38,7 @@ const pendingDocuments = new Map<string, ObligationDocument>();
 function actor() {
   const user = db.users.find((u) => u.user.id === getMockSessionUserId())?.user;
   if (!user) throw new MockHttpError(401, "You are not signed in.");
-  return { name: `${user.firstName} ${user.lastName}`, position: ROLE_LABELS[user.role] };
+  return { name: `${user.firstName} ${user.lastName}`, position: STAFF_ROLE_LABELS[user.role] };
 }
 
 function findObligation(id: string) {

@@ -16,8 +16,9 @@ import { Sidebar } from "./Sidebar";
 
 /**
  * Authenticated application frame. Middleware already blocks requests without
- * a session cookie; this additionally resolves the current user and sends the
- * visitor back to login if the session turns out to be invalid.
+ * a session cookie; this additionally resolves the current user
+ * (GET /auth/me) and sends the visitor back to login if the session turns out
+ * to be invalid. Protected content renders only once the user is loaded.
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -28,7 +29,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.replace(`${ROUTES.login}?${REDIRECT_PARAM}=${encodeURIComponent(pathname)}`);
+      // Keep the intended destination (path and query) for after sign-in.
+      const target = `${pathname}${typeof window !== "undefined" ? window.location.search : ""}`;
+      router.replace(`${ROUTES.login}?${REDIRECT_PARAM}=${encodeURIComponent(target)}`);
     }
   }, [status, router, pathname]);
 

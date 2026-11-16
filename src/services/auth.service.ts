@@ -1,7 +1,5 @@
 import { apiClient } from "@/lib/api/api-client";
 import { ENDPOINTS } from "@/lib/api/endpoints";
-import { clearAuthToken, setAuthToken } from "@/lib/api/auth-token";
-import type { MessageResponse } from "@/types/api";
 import type {
   AuthResponse,
   ForgotPasswordRequest,
@@ -11,26 +9,24 @@ import type {
   ResetPasswordRequest,
   User,
 } from "@/features/auth/types";
+import type { MessageResponse } from "@/types/api";
 
-/** Authentication. The session normally travels as an httpOnly cookie. */
+/**
+ * Authentication. In real auth mode these paths are answered by the
+ * same-origin auth proxy (src/app/api/auth), which calls the backend's
+ * /api/v1/{system}/auth/* endpoints and keeps the bearer token in an httpOnly
+ * cookie. See docs/AUTH_API_INTEGRATION.md.
+ */
 export const authService = {
-  login: async (payload: LoginRequest) => {
-    const response = await apiClient.post<AuthResponse & { token?: string }>(ENDPOINTS.auth.login, payload, { skipAuth: true });
-    // Token-based backends (e.g. Sanctum tokens) return the token in the body.
-    if (response.token) setAuthToken(response.token);
-    const { token: _token, ...rest } = response;
-    void _token;
-    return rest as AuthResponse;
-  },
-  logout: async () => {
-    try {
-      return await apiClient.post<MessageResponse>(ENDPOINTS.auth.logout);
-    } finally {
-      clearAuthToken();
-    }
-  },
-  register: (payload: RegisterRequest) => apiClient.post<MessageResponse>(ENDPOINTS.auth.register, payload, { skipAuth: true }),
+  /** POST /auth/login → { user, expiresAt }. 422 = invalid credentials or input, 429 = throttled. */
+  login: (payload: LoginRequest) => apiClient.post<AuthResponse>(ENDPOINTS.auth.login, payload, { skipAuth: true }),
+  /** POST /auth/logout → 204. Revokes the current token and clears the cookie. */
+  logout: () => apiClient.post<null>(ENDPOINTS.auth.logout),
+  /** GET /auth/me → the signed-in user with roles and effective permissions. */
   me: () => apiClient.get<User>(ENDPOINTS.auth.me),
+
+  // Mock API only: the backend has no register / forgot / reset endpoints.
+  register: (payload: RegisterRequest) => apiClient.post<MessageResponse>(ENDPOINTS.auth.register, payload, { skipAuth: true }),
   forgotPassword: (payload: ForgotPasswordRequest) =>
     apiClient.post<ForgotPasswordResponse>(ENDPOINTS.auth.forgotPassword, payload, { skipAuth: true }),
   resetPassword: (payload: ResetPasswordRequest) =>

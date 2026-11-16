@@ -1,14 +1,14 @@
 import { apiClient } from "@/lib/api/api-client";
 import { ENDPOINTS } from "@/lib/api/endpoints";
 import type { MessageResponse } from "@/types/api";
-import type { User } from "@/features/auth/types";
+import type { StaffProfile } from "@/features/settings/types";
 import type { AppNotification } from "@/features/notifications/types";
 import type { ChangePasswordRequest, UpdateProfileRequest } from "@/features/settings/types";
 
 /** Settings: the signed-in user's profile and password. */
 export const settingsService = {
-  getProfile: () => apiClient.get<User>(ENDPOINTS.profile.me),
-  updateProfile: (payload: UpdateProfileRequest) => apiClient.patch<User>(ENDPOINTS.profile.me, payload),
+  getProfile: () => apiClient.get<StaffProfile>(ENDPOINTS.profile.me),
+  updateProfile: (payload: UpdateProfileRequest) => apiClient.patch<StaffProfile>(ENDPOINTS.profile.me, payload),
   changePassword: (payload: ChangePasswordRequest) => apiClient.post<MessageResponse>(ENDPOINTS.profile.changePassword, payload),
 };
 

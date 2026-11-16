@@ -29,7 +29,7 @@ describe("Redux / RTK Query integration", () => {
   });
 
   it("keeps the session when the backend is unreachable but signs out on 401", async () => {
-    setApiSettings({ mode: "real", baseUrl: "https://backend.test/api" });
+    setApiSettings({ mode: "real", authMode: "real", baseUrl: "https://backend.test/api" });
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
     const store = makeStore();
     await store.dispatch(authApi.endpoints.getCurrentUser.initiate());

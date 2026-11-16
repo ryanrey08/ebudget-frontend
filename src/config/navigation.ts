@@ -12,6 +12,7 @@ import {
 import { ROUTES } from "@/lib/constants/routes";
 import { ALLOTMENT_CLASSES } from "@/lib/constants/allotment-classes";
 import { BFARS_REPORTS } from "@/lib/constants/bfars";
+import type { Permission } from "@/features/auth/types";
 
 export type NavLeaf =
   | { label: string; href: string; icon?: LucideIcon }
@@ -26,6 +27,13 @@ export interface NavItem {
   children?: NavLeaf[];
   /** Path prefix that marks the parent as active. */
   matchPrefix?: string;
+  /**
+   * Backend permission needed to see the item (GET /auth/me `permissions`).
+   * UI only: the backend authorises every request itself. No current item
+   * needs one, because the backend's catalog (users.*, roles.*, reports.*)
+   * has no eBudget pages yet.
+   */
+  permission?: Permission;
 }
 
 export const NAVIGATION: NavItem[] = [

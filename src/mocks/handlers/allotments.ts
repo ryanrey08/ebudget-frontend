@@ -14,7 +14,7 @@ import {
   type AllotmentWorkflowRequest,
   type CreateAllotmentRequest,
 } from "@/features/allotments/types";
-import { ROLE_LABELS } from "@/features/auth/types";
+import { STAFF_ROLE_LABELS } from "@/features/settings/types";
 import { db, nextSequence, relinkBudget } from "../services/db";
 import { MockHttpError, matchesSearch, num, paginate, route, str, type QueryValue } from "../services/http";
 import { getMockSessionUserId } from "../services/session";
@@ -94,7 +94,7 @@ function applyRegistryInput(record: Allotment, input: RegistryAllotmentInput) {
 function actor() {
   const user = db.users.find((u) => u.user.id === getMockSessionUserId())?.user;
   if (!user) throw new MockHttpError(401, "You are not signed in.");
-  return { name: `${user.firstName} ${user.lastName}`, position: ROLE_LABELS[user.role] };
+  return { name: `${user.firstName} ${user.lastName}`, position: STAFF_ROLE_LABELS[user.role] };
 }
 
 function findAllotment(id: string) {

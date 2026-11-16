@@ -22,6 +22,7 @@ import { applyServerErrors } from "@/components/forms/applyServerErrors";
 import { FISCAL_YEARS } from "@/config/site";
 import { useAppSelector } from "@/store/hooks";
 import { selectCurrentUser } from "@/store/slices/authSlice";
+import { roleLabel } from "@/features/auth/utils";
 import { useFiscalYear } from "@/hooks/useFiscalYear";
 import { useNotify } from "@/hooks/useNotify";
 import { getErrorMessage } from "@/lib/api/error-handler";
@@ -337,7 +338,7 @@ export function RaofeAllotmentWizard({ meta, existing }: { meta: AllotmentClassM
     { label: "Supporting documents are attached", ok: documents.length > 0 },
     { label: "Total is within the available balance", ok: remaining !== null && lineTotal > 0 && lineTotal <= remaining },
   ];
-  const fullName = user ? `${user.firstName} ${user.lastName}` : "—";
+  const fullName = user ? user.name : "—";
 
   const allotmentInfo = (
     <dl>
@@ -792,7 +793,7 @@ export function RaofeAllotmentWizard({ meta, existing }: { meta: AllotmentClassM
               <ol className="space-y-3 px-4 py-3 text-sm">
                 <li className="flex items-center gap-3">
                   <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">1</span>
-                  <span className="flex-1"><span className="block text-blue-700">Prepared by</span><span className="block font-semibold">{fullName}</span><span className="block text-xs text-gray-500">{user?.position}</span></span>
+                  <span className="flex-1"><span className="block text-blue-700">Prepared by</span><span className="block font-semibold">{fullName}</span><span className="block text-xs text-gray-500">{user ? roleLabel(user) : ""}</span></span>
                   <span className="text-right text-xs"><span className="flex items-center justify-end gap-1 font-medium text-green-700"><CheckCircle2 className="size-4" /> Completed</span>{formatDateTime(new Date().toISOString())}</span>
                 </li>
                 {(lookups.data?.approvers ?? []).map((ap, i) => (

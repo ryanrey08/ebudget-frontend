@@ -18,7 +18,7 @@ export const authApi = api.injectEndpoints({
       queryFn: (body) => fromService(() => authService.login(body)),
       invalidatesTags: ["Auth", "Profile"],
     }),
-    logout: build.mutation<MessageResponse, void>({
+    logout: build.mutation<null, void>({
       queryFn: () => fromService(() => authService.logout()),
     }),
     register: build.mutation<MessageResponse, RegisterRequest>({

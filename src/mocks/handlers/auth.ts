@@ -8,10 +8,31 @@ import type {
   ResetPasswordRequest,
   User,
 } from "@/features/auth/types";
-import type { ChangePasswordRequest, UpdateProfileRequest } from "@/features/settings/types";
+import {
+  STAFF_ROLE_LABELS,
+  type ChangePasswordRequest,
+  type StaffProfile,
+  type UpdateProfileRequest,
+} from "@/features/settings/types";
 import { db } from "../services/db";
 import { MockHttpError, route } from "../services/http";
 import { clearMockSession, getMockSessionUserId, setMockSession } from "../services/session";
+
+/** Mock staff record → the backend's CurrentSystemUserResource shape. */
+function toAuthUser(staff: StaffProfile): User {
+  return {
+    id: staff.id,
+    name: `${staff.firstName} ${staff.lastName}`,
+    email: staff.email,
+    is_active: true,
+    system: { key: "ebudget", name: "eBudget" },
+    roles: [{ id: `role-${staff.role}`, key: null, name: STAFF_ROLE_LABELS[staff.role] }],
+    last_login_at: staff.lastLoginAt ?? null,
+    created_at: staff.createdAt,
+    is_super_admin: false,
+    permissions: [],
+  };
+}
 
 function currentRecord() {
   const userId = getMockSessionUserId();
@@ -23,20 +44,21 @@ function currentRecord() {
 export const authHandlers = [
   route<LoginRequest>("POST", ENDPOINTS.auth.login, ({ body }): AuthResponse => {
     const record = db.users.find((u) => u.user.email.toLowerCase() === body.email.trim().toLowerCase());
+    // Same answer as the backend: 422 with a generic message on `email`.
     if (!record || record.password !== body.password) {
-      throw new MockHttpError(401, "Invalid email or password.");
+      throw new MockHttpError(422, "The given data was invalid.", { email: "These credentials do not match our records." });
     }
     record.user.lastLoginAt = new Date().toISOString();
     const expiresAt = setMockSession(record.user.id, body.remember);
-    return { user: { ...record.user }, expiresAt };
+    return { user: toAuthUser(record.user), expiresAt };
   }),
 
   route("POST", ENDPOINTS.auth.logout, () => {
     clearMockSession();
-    return { message: "Signed out." };
+    return null; // the backend answers 204 No Content
   }),
 
-  route("GET", ENDPOINTS.auth.me, (): User => ({ ...currentRecord().user })),
+  route("GET", ENDPOINTS.auth.me, (): User => toAuthUser(currentRecord().user)),
 
   route<RegisterRequest>("POST", ENDPOINTS.auth.register, ({ body }) => {
     if (db.users.some((u) => u.user.email.toLowerCase() === body.email.toLowerCase())) {
@@ -81,9 +103,9 @@ export const authHandlers = [
     return { message: "Your password has been reset. Please sign in." };
   }),
 
-  route("GET", ENDPOINTS.profile.me, (): User => ({ ...currentRecord().user })),
+  route("GET", ENDPOINTS.profile.me, (): StaffProfile => ({ ...currentRecord().user })),
 
-  route<UpdateProfileRequest>("PATCH", ENDPOINTS.profile.me, ({ body }): User => {
+  route<UpdateProfileRequest>("PATCH", ENDPOINTS.profile.me, ({ body }): StaffProfile => {
     const record = currentRecord();
     const taken = db.users.some(
       (u) => u !== record && u.user.email.toLowerCase() === body.email.toLowerCase(),

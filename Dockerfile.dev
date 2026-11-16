@@ -1,0 +1,39 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# eBudget frontend: development image (`next dev` with hot reload).
+#
+# Dependencies are installed into the image at /app/node_modules. Compose
+# bind-mounts the source over /app and keeps node_modules and .next in
+# container-only volumes, so the host's node_modules/.next are never used
+# (and the host's own `npm run dev` is never disturbed).
+# ─────────────────────────────────────────────────────────────────────────────
+
+ARG NODE_IMAGE=node:22-alpine
+FROM ${NODE_IMAGE}
+
+RUN apk add --no-cache libc6-compat
+
+# Create the app dir (and the .next mount point) owned by the unprivileged
+# `node` user, so volumes mounted there inherit that ownership.
+RUN mkdir -p /app/.next && chown -R node:node /app
+WORKDIR /app
+USER node
+
+# WATCHPACK_POLLING: Docker Desktop (VirtioFS) delivers file events from the
+# host, so polling is off by default; it costs a full CPU core while idle.
+# Set it to "true" only if saved files stop triggering hot reload.
+ENV NODE_ENV=development \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0 \
+    WATCHPACK_POLLING=false
+
+# Re-installs only when package.json / package-lock.json change.
+COPY --chown=node:node package.json package-lock.json ./
+RUN --mount=type=cache,target=/home/node/.npm,uid=1000,gid=1000 \
+    npm ci --no-audit --no-fund
+
+# Lets the image run on its own; with Compose the source is bind-mounted over it.
+COPY --chown=node:node . .
+
+EXPOSE 3000
+CMD ["sh", "-c", "exec ./node_modules/.bin/next dev --hostname 0.0.0.0 --port ${PORT}"]

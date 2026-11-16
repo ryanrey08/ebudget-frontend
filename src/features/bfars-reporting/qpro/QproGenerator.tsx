@@ -98,7 +98,7 @@ export function QproGenerator() {
   const [fetchReport] = useLazyGetQproReportQuery();
 
   const opts: QproDocOptions = { layout, scope, include };
-  const ctx = () => ({ logoUrl: `${window.location.origin}/brand/ebudget-emblem.png`, preparedBy: user ? `${user.firstName} ${user.lastName}` : "eBudget", generatedAt: formatDateTime(new Date().toISOString()) });
+  const ctx = () => ({ logoUrl: `${window.location.origin}/brand/ebudget-emblem.png`, preparedBy: user ? user.name : "eBudget", generatedAt: formatDateTime(new Date().toISOString()) });
 
   // Any change after a preview marks it out of date.
   const markStale = () => setPreview((p) => (p && !p.stale ? { ...p, stale: true } : p));

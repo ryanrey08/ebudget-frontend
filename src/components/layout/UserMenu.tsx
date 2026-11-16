@@ -7,7 +7,7 @@ import { useAppSelector } from "@/store/hooks";
 import { selectCurrentUser } from "@/store/slices/authSlice";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useLogout } from "@/features/auth/hooks/useLogout";
-import { ROLE_LABELS } from "@/features/auth/types";
+import { roleLabel } from "@/features/auth/utils";
 import { ROUTES } from "@/lib/constants/routes";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Avatar } from "@/components/shared/Avatar";
@@ -29,7 +29,7 @@ export function UserMenu() {
     );
   }
 
-  const fullName = `${user.firstName} ${user.lastName}`;
+  const fullName = user.name;
   return (
     <div ref={ref} className="relative">
       <button
@@ -42,7 +42,7 @@ export function UserMenu() {
         <Avatar name={fullName} />
         <span className="hidden text-left md:block">
           <span className="block text-sm font-medium text-gray-900">{fullName}</span>
-          <span className="block text-xs text-gray-500">{ROLE_LABELS[user.role]}</span>
+          <span className="block text-xs text-gray-500">{roleLabel(user)}</span>
         </span>
         <ChevronDown className="hidden size-4 text-gray-500 md:block" />
       </button>

@@ -79,12 +79,25 @@ export function flattenFieldErrors(errors: unknown): Record<string, string> | un
 
 /**
  * Builds an error from an HTTP error response body. Only the backend's
- * `message` and field `errors` are shown; stack traces, SQL and other
+ * message and field `errors` are shown; stack traces, SQL and other
  * technical details (e.g. Laravel's `exception`/`trace`) are dropped.
+ *
+ * The backend answers errors as RFC 9457 problem details
+ * (`{ title, status, code, detail, request_id, errors? }`), so `detail` is the
+ * message; `message` / `error` are still read for other formats.
  */
 export function errorFromResponse(status: number, body: unknown): ApiRequestError {
-  const data = (typeof body === "object" && body !== null ? body : {}) as { message?: unknown; error?: unknown; errors?: unknown };
-  let message = typeof data.message === "string" ? data.message : typeof data.error === "string" ? data.error : "";
+  const data = (typeof body === "object" && body !== null ? body : {}) as {
+    detail?: unknown;
+    message?: unknown;
+    error?: unknown;
+    errors?: unknown;
+  };
+  let message =
+    typeof data.detail === "string" ? data.detail
+    : typeof data.message === "string" ? data.message
+    : typeof data.error === "string" ? data.error
+    : "";
   // Hide server internals on 5xx responses; they are not meaningful to users.
   if (status >= 500 || message.length > 300) message = "";
   return new ApiRequestError(status, message || undefined, flattenFieldErrors(data.errors));

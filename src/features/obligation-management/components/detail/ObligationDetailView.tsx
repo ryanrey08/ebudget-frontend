@@ -18,7 +18,7 @@ import { useNotify } from "@/hooks/useNotify";
 import { getErrorMessage, isApiError } from "@/lib/api/error-handler";
 import { ROUTES } from "@/lib/constants/routes";
 import { formatCurrency, formatDateTime } from "@/lib/utils/format";
-import { ROLE_LABELS } from "@/features/auth/types";
+import { roleLabel } from "@/features/auth/utils";
 import { useGetAppropriationLookupsQuery } from "@/features/appropriations/services/appropriationsApi";
 import { CardTitle, DocumentsCard } from "@/features/allotments/components/detail/InfoCards";
 import { useDeleteObligationMutation, useGetObligationQuery, useObligationWorkflowMutation } from "../../services/obligationsApi";
@@ -183,7 +183,7 @@ export function ObligationDetailView({ id }: { id: string }) {
                       <Button variant="outline" onClick={() => setSignature("")} disabled={!signature}><X className="size-4" /> Clear</Button>
                     </div>
                     <p className="mt-2 text-xs text-gray-500">
-                      {user ? `${user.firstName} ${user.lastName} · ${ROLE_LABELS[user.role]}` : ""} · {formatDateTime(new Date().toISOString())}
+                      {user ? `${user.name} · ${roleLabel(user)}` : ""} · {formatDateTime(new Date().toISOString())}
                     </p>
                   </div>
                 </div>
@@ -233,7 +233,7 @@ export function ObligationDetailView({ id }: { id: string }) {
           <div className="flex flex-wrap items-center gap-3 sm:justify-end">
             {user && approverStep && (
               <span className="max-w-xs text-xs text-gray-500">
-                Acting as {user.firstName} {user.lastName} ({ROLE_LABELS[user.role]}). Demo mode does not restrict approvers by role.
+                Acting as {user.name} ({roleLabel(user)}). Demo mode does not restrict approvers by role.
               </span>
             )}
             {approverStep && (

@@ -1,0 +1,31 @@
+# Development override: `next dev` with hot reload, source bind-mounted.
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+services:
+  frontend:
+    container_name: ebudget-frontend-dev
+    image: ebudget-frontend:dev
+    build:
+      dockerfile: Dockerfile.dev
+    environment:
+      NODE_ENV: development
+      # Polling costs ~1 CPU core while idle; Docker Desktop delivers file
+      # events without it. Set WATCHPACK_POLLING=true if hot reload stops.
+      WATCHPACK_POLLING: ${WATCHPACK_POLLING:-false}
+      # Browser-visible settings. In dev they are read when `next dev` starts,
+      # so a restart (not a rebuild) picks up changes. They override the
+      # host's .env.local, which is visible through the bind mount.
+      NEXT_PUBLIC_API_MODE: ${NEXT_PUBLIC_API_MODE:-mock}
+      NEXT_PUBLIC_AUTH_MODE: ${NEXT_PUBLIC_AUTH_MODE:-real}
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000/api}
+      NEXT_PUBLIC_API_TIMEOUT_MS: ${NEXT_PUBLIC_API_TIMEOUT_MS:-30000}
+      NEXT_PUBLIC_API_WITH_CREDENTIALS: ${NEXT_PUBLIC_API_WITH_CREDENTIALS:-true}
+      NEXT_PUBLIC_MOCK_API_DELAY_MS: ${NEXT_PUBLIC_MOCK_API_DELAY_MS:-450}
+      NEXT_PUBLIC_MOCK_API_FAILURE_RATE: ${NEXT_PUBLIC_MOCK_API_FAILURE_RATE:-0}
+      NEXT_PUBLIC_MOCK_API_PERSIST: ${NEXT_PUBLIC_MOCK_API_PERSIST:-false}
+    volumes:
+      - .:/app
+      # Container-only (anonymous) volumes: the host's node_modules and .next
+      # never shadow the container's, and the container never writes into the
+      # host's .next (where a host `npm run dev` may be running).
+      - /app/node_modules
+      - /app/.next

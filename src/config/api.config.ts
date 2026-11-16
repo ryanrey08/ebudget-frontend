@@ -21,6 +21,14 @@ export type ApiMode = "mock" | "real";
 export interface ApiConfig {
   /** Where requests are answered: the in-browser mock API or the backend. */
   mode: ApiMode;
+  /**
+   * Where authentication requests (/auth/*) are answered. "real" sends them to
+   * the same-origin auth proxy (src/app/api/auth), which talks to the backend
+   * and keeps the access token in an httpOnly cookie. Defaults to `mode`, so
+   * real backend auth can be combined with mock data while the eBudget data
+   * endpoints do not exist in the backend yet.
+   */
+  authMode: ApiMode;
   /** Backend base URL without a trailing slash, e.g. http://localhost:8000/api */
   baseUrl: string;
   /** Request timeout for real requests, in milliseconds. */
@@ -41,6 +49,7 @@ export const DEFAULT_API_BASE_URL = "http://localhost:8000/api";
 
 interface RawApiEnv {
   mode?: string;
+  authMode?: string;
   legacyUseMock?: string;
   baseUrl?: string;
   timeoutMs?: string;
@@ -73,6 +82,11 @@ export function resolveApiConfig(raw: RawApiEnv): ApiConfig {
     mode = raw.legacyUseMock?.trim().toLowerCase() === "false" ? "real" : "mock";
   }
 
+  let authMode: ApiMode = mode;
+  const requestedAuth = raw.authMode?.trim().toLowerCase();
+  if (requestedAuth === "mock" || requestedAuth === "real") authMode = requestedAuth;
+  else if (requestedAuth) warnings.push(`NEXT_PUBLIC_AUTH_MODE="${raw.authMode}" is not supported (use "mock" or "real"); using "${mode}".`);
+
   let baseUrl = (raw.baseUrl ?? "").trim().replace(/\/+$/, "");
   if (!baseUrl) {
     baseUrl = DEFAULT_API_BASE_URL;
@@ -84,6 +98,7 @@ export function resolveApiConfig(raw: RawApiEnv): ApiConfig {
 
   return {
     mode,
+    authMode,
     baseUrl,
     timeoutMs: toNumber(raw.timeoutMs, 30_000, 1_000, 300_000),
     withCredentials: raw.withCredentials?.trim().toLowerCase() !== "false",
@@ -97,6 +112,7 @@ export function resolveApiConfig(raw: RawApiEnv): ApiConfig {
 export const apiConfig: Readonly<ApiConfig> = Object.freeze(
   resolveApiConfig({
     mode: process.env.NEXT_PUBLIC_API_MODE,
+    authMode: process.env.NEXT_PUBLIC_AUTH_MODE,
     legacyUseMock: process.env.NEXT_PUBLIC_USE_MOCK_API,
     baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
     timeoutMs: process.env.NEXT_PUBLIC_API_TIMEOUT_MS,
@@ -108,6 +124,13 @@ export const apiConfig: Readonly<ApiConfig> = Object.freeze(
 );
 
 export const isMockApi = () => apiConfig.mode === "mock";
+export const isMockAuth = () => apiConfig.authMode === "mock";
+
+/**
+ * Same-origin base path of the Next.js auth proxy (src/app/api/auth/*). The
+ * browser never calls the backend's auth endpoints directly.
+ */
+export const AUTH_PROXY_BASE_URL = "/api";
 
 if (process.env.NODE_ENV !== "production" && typeof window !== "undefined") {
   for (const warning of apiConfig.warnings) console.warn(`[api config] ${warning}`);

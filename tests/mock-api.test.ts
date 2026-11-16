@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { getApiSettings } from "@/lib/api/api-client";
 import { toPlainApiError } from "@/lib/api/api-error";
 import { BFARS_REPORTS } from "@/lib/constants/bfars";
-import { ROLE_LABELS } from "@/features/auth/types";
+import { STAFF_ROLE_LABELS } from "@/features/settings/types";
 import {
   allotmentClassesService,
   allotmentsService,
@@ -29,20 +29,27 @@ beforeAll(async () => {
 describe("mock API: authentication and settings", () => {
   it("rejects a wrong password with the backend-style message", async () => {
     const error = await authService.login({ email: "juan.delacruz@mpc.edu.ph", password: "wrong", remember: false }).catch(toPlainApiError);
-    expect(error).toMatchObject({ status: 401, message: "Invalid email or password." });
+    expect(error).toMatchObject({
+      status: 422,
+      code: "VALIDATION",
+      fieldErrors: { email: "These credentials do not match our records." },
+    });
   });
 
   it("returns the signed-in user and profile", async () => {
     const me = await authService.me();
     expect(me.email).toBe("juan.delacruz@mpc.edu.ph");
+    // Same shape as the backend's CurrentSystemUserResource.
+    expect(me).toMatchObject({ name: "Juan Dela Cruz", is_active: true, system: { key: "ebudget" }, is_super_admin: false });
+    expect(Array.isArray(me.permissions)).toBe(true);
     expect((await settingsService.getProfile()).id).toBe(me.id);
   });
 
   it("updates the profile in the mock store", async () => {
     const me = await settingsService.getProfile();
-    const updated = await settingsService.updateProfile({ ...me, phone: "+63 917 000 0000" });
+    const updated = await settingsService.updateProfile({ ...me, phone: "+63 917 000 0000", firstName: "Juanito" });
     expect(updated.phone).toBe("+63 917 000 0000");
-    expect((await authService.me()).phone).toBe("+63 917 000 0000");
+    expect((await authService.me()).name).toBe("Juanito Dela Cruz");
   });
 });
 
@@ -113,7 +120,7 @@ describe("mock API: data relationships", () => {
   });
 
   it("users have valid roles", () => {
-    for (const { user } of db.users) expect(Object.keys(ROLE_LABELS)).toContain(user.role);
+    for (const { user } of db.users) expect(Object.keys(STAFF_ROLE_LABELS)).toContain(user.role);
   });
 });
 

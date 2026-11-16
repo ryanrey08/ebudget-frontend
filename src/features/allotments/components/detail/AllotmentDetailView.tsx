@@ -18,7 +18,7 @@ import { useNotify } from "@/hooks/useNotify";
 import { getErrorMessage, isApiError } from "@/lib/api/error-handler";
 import { ROUTES } from "@/lib/constants/routes";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/utils/format";
-import { ROLE_LABELS } from "@/features/auth/types";
+import { roleLabel } from "@/features/auth/utils";
 import { useGetAppropriationLookupsQuery } from "@/features/appropriations/services/appropriationsApi";
 import {
   useAllotmentWorkflowMutation,
@@ -280,7 +280,7 @@ export function AllotmentDetailView({ id }: { id: string }) {
           <div className="flex flex-wrap items-center gap-3 sm:justify-end">
             {user && approvalStep && (
               <span className="text-xs text-gray-500">
-                Acting as {user.firstName} {user.lastName} ({ROLE_LABELS[user.role]}). Demo mode does not restrict approvers by role.
+                Acting as {user.name} ({roleLabel(user)}). Demo mode does not restrict approvers by role.
               </span>
             )}
             {approvalStep === "release" && (

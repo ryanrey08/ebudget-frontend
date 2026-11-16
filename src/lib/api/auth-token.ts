@@ -1,12 +1,11 @@
 /**
  * Central place for API authentication state.
  *
- * The current backend contract uses an httpOnly session cookie (sent
- * automatically because the client uses `credentials: "include"`), which is
- * the safer option because scripts cannot read it. If the future backend
- * issues bearer tokens instead (e.g. Laravel Sanctum personal access tokens),
- * call `setAuthToken(token)` after login and the client attaches
- * `Authorization: Bearer <token>` to every request.
+ * Authentication itself does NOT use this token store: the backend's bearer
+ * token is kept by the Next.js auth proxy in an httpOnly cookie
+ * (src/lib/server/backend-auth.ts), so scripts never see it. This module
+ * still carries the client's 401/403 session events, and `setAuthToken` is
+ * kept for data APIs that may need an explicit bearer token later.
  *
  * Tokens are kept in memory and, so a reload keeps the session, in
  * sessionStorage (cleared when the tab closes). Nothing is ever hardcoded and

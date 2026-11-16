@@ -107,7 +107,7 @@ export function QproView() {
   }, [rows, view, search]);
   const paging = useClientPagination(tableRows, 10);
 
-  const docContext = () => ({ logoUrl: `${window.location.origin}/brand/ebudget-emblem.png`, preparedBy: user ? `${user.firstName} ${user.lastName}` : "eBudget", generatedAt: formatDateTime(new Date().toISOString()) });
+  const docContext = () => ({ logoUrl: `${window.location.origin}/brand/ebudget-emblem.png`, preparedBy: user ? user.name : "eBudget", generatedAt: formatDateTime(new Date().toISOString()) });
   const exportExcel = () => {
     if (!data) return;
     downloadFile(qproFileName(data, "xls"), buildQproSpreadsheet(data, { scope: "both", include: { cover: false, summary: true, details: true, signature: false } }), "application/vnd.ms-excel");

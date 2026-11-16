@@ -21,7 +21,7 @@ import type { AllotmentClassMeta } from "@/lib/constants/allotment-classes";
 import { ROUTES } from "@/lib/constants/routes";
 import { cn } from "@/lib/utils/cn";
 import { formatCurrency, formatDate, formatDateTime, formatFileSize } from "@/lib/utils/format";
-import { ROLE_LABELS } from "@/features/auth/types";
+import { roleLabel } from "@/features/auth/utils";
 import { useGetAppropriationLookupsQuery } from "@/features/appropriations/services/appropriationsApi";
 import {
   useAllotmentWorkflowMutation,
@@ -366,7 +366,7 @@ export function RegistryAllotmentDetail({ meta, id }: { meta: AllotmentClassMeta
                     </fieldset>
                     )}
                     <Row label={step === "review" ? "Approval Date" : "Review Date"}><span>{formatDateTime(today)}</span></Row>
-                    {step !== "review" && user && <Row label="Reviewed By"><span className="block rounded-lg bg-gray-50 px-3 py-2"><span className="font-medium">{user.firstName} {user.lastName}</span><span className="block text-xs text-gray-500">{ROLE_LABELS[user.role]}</span></span></Row>}
+                    {step !== "review" && user && <Row label="Reviewed By"><span className="block rounded-lg bg-gray-50 px-3 py-2"><span className="font-medium">{user.name}</span><span className="block text-xs text-gray-500">{roleLabel(user)}</span></span></Row>}
                   </>
                 )}
                 <div>
@@ -380,7 +380,7 @@ export function RegistryAllotmentDetail({ meta, id }: { meta: AllotmentClassMeta
                   <div>
                     <label htmlFor="signature" className="mb-1.5 block font-medium text-blue-900">Digital Signature <span className="text-brand-600">*</span></label>
                     <Input id="signature" value={signature} onChange={(e) => setSignature(e.target.value)} placeholder="Type your full name" invalid={formError?.field === "signature"} className="font-serif text-lg italic" />
-                    {user && <p className="mt-1 text-xs text-gray-500">{user.firstName} {user.lastName} · {ROLE_LABELS[user.role]}</p>}
+                    {user && <p className="mt-1 text-xs text-gray-500">{user.name} · {roleLabel(user)}</p>}
                   </div>
                 )}
               </div>
@@ -489,7 +489,7 @@ export function RegistryAllotmentDetail({ meta, id }: { meta: AllotmentClassMeta
             )}
           </div>
           <div className="flex flex-wrap items-center gap-3 sm:justify-end">
-            {user && isApprover && <span className="max-w-xs text-xs text-gray-500">Acting as {user.firstName} {user.lastName} ({ROLE_LABELS[user.role]}). Demo mode does not restrict approvers by role.</span>}
+            {user && isApprover && <span className="max-w-xs text-xs text-gray-500">Acting as {user.name} ({roleLabel(user)}). Demo mode does not restrict approvers by role.</span>}
             {page && (
               <Button variant="outline" size="lg" onClick={() => act("saveRemarks")} loading={acting && originalArgs?.action === "saveRemarks"} disabled={busy}><Save className="size-4" /> Save as Draft</Button>
             )}

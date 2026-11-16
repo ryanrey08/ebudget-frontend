@@ -8,5 +8,8 @@ export const env = {
   apiMode: apiConfig.mode,
   apiBaseUrl: apiConfig.baseUrl,
   useMockApi: apiConfig.mode === "mock",
+  authMode: apiConfig.authMode,
+  /** Authentication uses the in-browser mock (demo accounts) instead of the backend. */
+  useMockAuth: apiConfig.authMode === "mock",
   mockApiDelayMs: apiConfig.mockDelayMs,
 } as const;

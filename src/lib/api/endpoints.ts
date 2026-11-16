@@ -4,6 +4,12 @@
  * real backend only requires the backend to implement the same contract.
  */
 export const ENDPOINTS = {
+  /**
+   * In real auth mode these are served by the Next.js auth proxy
+   * (/api/auth/*), which maps login, logout and me to the backend's
+   * /api/v1/{system}/auth/*. register / forgot-password / reset-password
+   * exist only in the mock API (the backend has no such endpoints).
+   */
   auth: {
     login: "/auth/login",
     logout: "/auth/logout",

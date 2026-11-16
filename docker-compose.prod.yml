@@ -1,0 +1,41 @@
+# Production override: optimized standalone image.
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml build
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+services:
+  frontend:
+    container_name: ebudget-frontend
+    image: ${FRONTEND_IMAGE:-ebudget-frontend:latest}
+    build:
+      dockerfile: Dockerfile
+      # Browser-visible settings are compiled into the bundle: changing any of
+      # them requires a rebuild. Never put secrets in NEXT_PUBLIC_* values.
+      args:
+        NEXT_PUBLIC_API_MODE: ${NEXT_PUBLIC_API_MODE:-mock}
+        NEXT_PUBLIC_AUTH_MODE: ${NEXT_PUBLIC_AUTH_MODE:-real}
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000/api}
+        NEXT_PUBLIC_API_TIMEOUT_MS: ${NEXT_PUBLIC_API_TIMEOUT_MS:-30000}
+        NEXT_PUBLIC_API_WITH_CREDENTIALS: ${NEXT_PUBLIC_API_WITH_CREDENTIALS:-true}
+        NEXT_PUBLIC_MOCK_API_DELAY_MS: ${NEXT_PUBLIC_MOCK_API_DELAY_MS:-450}
+        NEXT_PUBLIC_MOCK_API_FAILURE_RATE: ${NEXT_PUBLIC_MOCK_API_FAILURE_RATE:-0}
+        NEXT_PUBLIC_MOCK_API_PERSIST: ${NEXT_PUBLIC_MOCK_API_PERSIST:-false}
+    environment:
+      NODE_ENV: production
+      # "true" only to try the production build over plain http (drops the
+      # Secure flag on the session cookie). Leave false behind HTTPS.
+      SESSION_COOKIE_INSECURE: ${SESSION_COOKIE_INSECURE:-false}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/login || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

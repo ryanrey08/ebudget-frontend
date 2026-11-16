@@ -13,6 +13,8 @@ import {
   selectSidebarCollapsed,
 } from "@/store/slices/uiSlice";
 import { useLogout } from "@/features/auth/hooks/useLogout";
+import { hasPermission } from "@/features/auth/utils";
+import { selectCurrentUser } from "@/store/slices/authSlice";
 import { LogoLockup } from "@/components/shared/Logo";
 import { cn } from "@/lib/utils/cn";
 
@@ -27,6 +29,8 @@ export function Sidebar() {
   const collapsed = useAppSelector(selectSidebarCollapsed);
   const mobileOpen = useAppSelector(selectMobileSidebarOpen);
   const { logout, isLoggingOut } = useLogout();
+  const user = useAppSelector(selectCurrentUser);
+  const items = NAVIGATION.filter((item) => !item.permission || hasPermission(user, item.permission));
 
   // Groups open by default when they contain the active route.
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() =>
@@ -86,7 +90,7 @@ export function Sidebar() {
 
         <nav className="scrollbar-thin flex-1 overflow-y-auto px-2.5 py-3">
           <ul className="space-y-1">
-            {NAVIGATION.map((item) => {
+            {items.map((item) => {
               const active = isItemActive(item, pathname);
               const Icon = item.icon;
               const baseRow = cn(

@@ -1,11 +1,11 @@
-import type { User } from "@/features/auth/types";
+import type { StaffProfile } from "@/features/settings/types";
 
 /**
  * Demo accounts for the mock API only. Passwords live exclusively in the mock
  * layer and never reach Redux or browser storage.
  */
 export interface MockUserRecord {
-  user: User;
+  user: StaffProfile;
   password: string;
 }
 

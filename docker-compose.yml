@@ -1,0 +1,38 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# eBudget frontend: settings shared by development and production.
+# Use it together with one of the overrides:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml  up --build
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Values come from the shell or a --env-file (see .env.example, "Docker"
+# section); the defaults below work on macOS with the backend on host :8080.
+# The backend is NOT part of this stack: it runs in its own Compose project.
+# ─────────────────────────────────────────────────────────────────────────────
+name: ebudget-frontend
+
+services:
+  frontend:
+    build:
+      context: .
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      PORT: "3000"
+      # Server-only (runtime) settings for the auth proxy in src/app/api/auth.
+      # Resolved INSIDE the container, so "localhost" would be the container
+      # itself: host.docker.internal reaches a backend published on the host.
+      BACKEND_API_URL: ${BACKEND_API_URL:-http://host.docker.internal:8080/api/v1}
+      BACKEND_SYSTEM: ${BACKEND_SYSTEM:-ebudget}
+      BACKEND_TIMEOUT_MS: ${BACKEND_TIMEOUT_MS:-15000}
+    extra_hosts:
+      # Built in on Docker Desktop; this makes the same name work on Linux.
+      - "host.docker.internal:host-gateway"
+    # tini as PID 1: forwards SIGTERM for a clean `docker compose down`.
+    init: true
+    networks:
+      - ebudget
+
+networks:
+  ebudget:
+    name: ebudget-frontend

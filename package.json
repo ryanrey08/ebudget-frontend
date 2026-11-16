@@ -9,7 +9,14 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "docker:dev": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build",
+    "docker:dev:down": "docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v",
+    "docker:prod:build": "docker compose -f docker-compose.yml -f docker-compose.prod.yml build",
+    "docker:prod:up": "docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d",
+    "docker:prod:down": "docker compose -f docker-compose.yml -f docker-compose.prod.yml down",
+    "docker:logs": "docker compose logs -f",
+    "docker:ps": "docker compose ps"
   },
   "dependencies": {
     "@hookform/resolvers": "^6.0.2",

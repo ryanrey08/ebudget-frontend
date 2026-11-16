@@ -1,0 +1,45 @@
+# Keep the build context small and free of secrets. Everything `next build`
+# needs (src, public, package*.json, next/ts/postcss/eslint configs) stays in.
+
+# Dependencies and build output (rebuilt inside the image)
+node_modules
+.next
+out
+build
+coverage
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment files: never bake secrets or local settings into an image.
+# .env.example is harmless but not needed by the build.
+.env
+.env.*
+
+# VCS, editors, OS files
+.git
+.gitignore
+.vscode
+.idea
+.claude
+.DS_Store
+*.pem
+
+# Docker files themselves (changing them should not bust the COPY cache)
+Dockerfile*
+docker-compose*
+.dockerignore
+docker
+
+# Not needed to build or run the app
+tests
+docs
+README.md
+vitest.config.*
+.vercel
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

@@ -1,4 +1,4 @@
-import { apiConfig, type ApiConfig } from "@/config/api.config";
+import { apiConfig, AUTH_PROXY_BASE_URL, type ApiConfig } from "@/config/api.config";
 import { ApiRequestError, errorFromResponse } from "./api-error";
 import { normalizeResponse } from "./api-response";
 import type { ApiRequestConfig, DownloadedFile, HttpMethod, QueryParams, QueryValue } from "./api-types";
@@ -14,6 +14,11 @@ import { clearAuthToken, emitAuthEvent, getAuthToken } from "./auth-token";
  *
  * In real mode a failed request is reported as an error. It never falls back
  * to mock data.
+ *
+ * Authentication requests (`/auth/*`) follow `authMode` instead of `mode`. In
+ * real auth mode they go to the same-origin Next.js auth proxy
+ * (src/app/api/auth), never straight to the backend, so the backend's access
+ * token stays in an httpOnly cookie that scripts cannot read.
  */
 
 /** Something that can answer a request: the mock API or fetch. */
@@ -148,9 +153,19 @@ function fileNameFrom(headers: Headers | undefined, fallback: string) {
   return name || fallback;
 }
 
+export const isAuthPath = (url: string) => /^\/?auth\//.test(url);
+
+/** Mode and settings that apply to one request (auth requests use authMode). */
+export function resolveRequestSettings(url: string, settings: ApiConfig): { mode: ApiConfig["mode"]; settings: ApiConfig } {
+  if (!isAuthPath(url)) return { mode: settings.mode, settings };
+  if (settings.authMode === "mock") return { mode: "mock", settings };
+  // Same-origin proxy: the httpOnly session cookie is sent automatically.
+  return { mode: "real", settings: { ...settings, baseUrl: AUTH_PROXY_BASE_URL, withCredentials: false } };
+}
+
 async function send(config: ApiRequestConfig): Promise<ApiTransportResult> {
-  const settings = getApiSettings();
-  const transport = transportOverride ?? (settings.mode === "mock" ? mockTransport : fetchTransport);
+  const { mode, settings } = resolveRequestSettings(config.url, getApiSettings());
+  const transport = transportOverride ?? (mode === "mock" ? mockTransport : fetchTransport);
   const result = await transport(config, settings);
 
   if (result.status >= 200 && result.status < 300) return result;

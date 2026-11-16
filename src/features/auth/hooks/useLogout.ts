@@ -16,6 +16,7 @@ export function useLogout() {
   const [logoutRequest, { isLoading }] = useLogoutMutation();
 
   const logout = useCallback(async () => {
+    if (isLoading) return;
     try {
       await logoutRequest().unwrap();
     } catch {
@@ -26,7 +27,7 @@ export function useLogout() {
     dispatch(alertAdded({ variant: "info", title: "Signed out", description: "You have been signed out of eBudget." }));
     router.replace(ROUTES.login);
     router.refresh();
-  }, [dispatch, logoutRequest, router]);
+  }, [dispatch, isLoading, logoutRequest, router]);
 
   return { logout, isLoggingOut: isLoading };
 }

@@ -1,7 +1,8 @@
 /**
  * Name of the session cookie checked by middleware to guard protected routes.
- * In production the backend should set it as an httpOnly, Secure cookie; the
- * mock API sets a non-sensitive placeholder value from the browser instead.
+ * In real auth mode it holds the backend's bearer token and is set by the
+ * Next.js auth proxy as httpOnly (+ Secure in production), so scripts cannot
+ * read it. The mock API sets a non-sensitive placeholder from the browser.
  */
 export const SESSION_COOKIE = "ebudget_session";
 
