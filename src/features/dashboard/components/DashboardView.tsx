@@ -14,8 +14,10 @@ import { SummaryCards } from "./SummaryCards";
 
 export function DashboardView() {
   const fiscalYear = useFiscalYear();
-  const { data, isLoading, isFetching, error, refetch } = useGetDashboardOverviewQuery({ fiscalYear });
-  const loading = isLoading || isFetching;
+  const { data, currentData, isFetching, error, refetch } = useGetDashboardOverviewQuery({ fiscalYear });
+  // Skeletons only while there is no data for the current arguments; a
+  // background refetch keeps the cached data on screen.
+  const loading = isFetching && !currentData;
 
   return (
     <>

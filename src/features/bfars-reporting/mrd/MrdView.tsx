@@ -96,8 +96,10 @@ export function MrdView() {
   const [applied, setApplied] = useState<MrdParams>(() => emptyMrdParams(fy));
   const [errors, setErrors] = useState<Partial<Record<MrdField, string>>>({});
   const [search, setSearch] = useState("");
-  const { data, isLoading, isFetching, error, refetch } = useGetMrdReportQuery(applied);
-  const loading = isLoading || isFetching;
+  const { data, currentData, isFetching, error, refetch } = useGetMrdReportQuery(applied);
+  // Skeletons only while there is no data for the current arguments; a
+  // background refetch keeps the cached data on screen.
+  const loading = isFetching && !currentData;
 
   const onChange = (field: MrdField, value: string) => {
     setDraft((d) => changeMrdParam(d, field, value));

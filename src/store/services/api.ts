@@ -21,6 +21,6 @@ export const api = createApi({
     "Report",
     "Notification",
   ],
-  keepUnusedDataFor: 120,
+  keepUnusedDataFor: 300,
   endpoints: () => ({}),
 });

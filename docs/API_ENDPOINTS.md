@@ -16,7 +16,7 @@
 | `NEXT_PUBLIC_API_BASE_URL` | URL, no trailing slash | Backend base URL (real mode) |
 | `NEXT_PUBLIC_API_TIMEOUT_MS` | number, default `30000` | Request timeout (real mode) |
 | `NEXT_PUBLIC_API_WITH_CREDENTIALS` | `true` (default) \| `false` | Send cookies (session cookie) |
-| `NEXT_PUBLIC_MOCK_API_DELAY_MS` | number, default `450` | Simulated latency (mock mode) |
+| `NEXT_PUBLIC_MOCK_API_DELAY_MS` | number, default `150` | Simulated latency (mock mode) |
 | `NEXT_PUBLIC_MOCK_API_FAILURE_RATE` | `0`–`1`, default `0` | Share of mock requests that fail with 503 |
 | `NEXT_PUBLIC_MOCK_API_PERSIST` | `true` \| `false` (default) | Keep mock changes in localStorage across reloads |
 

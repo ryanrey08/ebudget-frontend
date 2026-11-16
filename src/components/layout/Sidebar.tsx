@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDown, X } from "lucide-react";
 import { NAVIGATION, isActivePath, type NavItem } from "@/config/navigation";
@@ -13,10 +13,23 @@ import {
   selectSidebarCollapsed,
 } from "@/store/slices/uiSlice";
 import { useLogout } from "@/features/auth/hooks/useLogout";
+import { useRoutePrefetch } from "@/hooks/useRoutePrefetch";
 import { hasPermission } from "@/features/auth/utils";
 import { selectCurrentUser } from "@/store/slices/authSlice";
 import { LogoLockup } from "@/components/shared/Logo";
 import { cn } from "@/lib/utils/cn";
+
+/** Spinner shown inside a sidebar link while its page is loading. */
+function LinkPending({ className }: { className?: string }) {
+  const { pending } = useLinkStatus();
+  if (!pending) return null;
+  return (
+    <span
+      aria-hidden
+      className={cn("ml-auto size-3.5 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent opacity-80", className)}
+    />
+  );
+}
 
 function isItemActive(item: NavItem, pathname: string) {
   if (item.href) return isActivePath(pathname, item.href);
@@ -29,6 +42,7 @@ export function Sidebar() {
   const collapsed = useAppSelector(selectSidebarCollapsed);
   const mobileOpen = useAppSelector(selectMobileSidebarOpen);
   const { logout, isLoggingOut } = useLogout();
+  const prefetch = useRoutePrefetch();
   const user = useAppSelector(selectCurrentUser);
   const items = NAVIGATION.filter((item) => !item.permission || hasPermission(user, item.permission));
 
@@ -103,6 +117,8 @@ export function Sidebar() {
                   <li key={item.id}>
                     <Link
                       href={item.href}
+                      onMouseEnter={() => prefetch(item.href!)}
+                      onFocus={() => prefetch(item.href!)}
                       title={iconOnly ? item.label : undefined}
                       aria-current={active ? "page" : undefined}
                       className={cn(
@@ -114,6 +130,7 @@ export function Sidebar() {
                     >
                       <Icon className="size-[22px] shrink-0" aria-hidden />
                       {!iconOnly && <span className="truncate">{item.label}</span>}
+                      {!iconOnly && <LinkPending />}
                     </Link>
                   </li>
                 );
@@ -172,6 +189,8 @@ export function Sidebar() {
                           <li key={child.href}>
                             <Link
                               href={child.href}
+                              onMouseEnter={() => prefetch(child.href)}
+                              onFocus={() => prefetch(child.href)}
                               aria-current={childActive ? "page" : undefined}
                               className={cn(
                                 childClass,
@@ -181,6 +200,7 @@ export function Sidebar() {
                               )}
                             >
                               {child.label}
+                              <LinkPending />
                             </Link>
                           </li>
                         );

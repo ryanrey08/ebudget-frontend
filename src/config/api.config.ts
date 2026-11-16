@@ -102,7 +102,7 @@ export function resolveApiConfig(raw: RawApiEnv): ApiConfig {
     baseUrl,
     timeoutMs: toNumber(raw.timeoutMs, 30_000, 1_000, 300_000),
     withCredentials: raw.withCredentials?.trim().toLowerCase() !== "false",
-    mockDelayMs: toNumber(raw.mockDelayMs, 450, 0, 10_000),
+    mockDelayMs: toNumber(raw.mockDelayMs, 150, 0, 10_000),
     mockFailureRate: toNumber(raw.mockFailureRate, 0, 0, 1),
     mockPersist: raw.mockPersist?.trim().toLowerCase() === "true",
     warnings,

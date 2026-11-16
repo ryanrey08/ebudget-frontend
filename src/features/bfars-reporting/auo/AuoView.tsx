@@ -85,8 +85,10 @@ export function AuoView() {
   const [applied, setApplied] = useState<AuoParams>(() => emptyAuoParams(fy));
   const [errors, setErrors] = useState<Partial<Record<AuoField, string>>>({});
   const [search, setSearch] = useState("");
-  const { data, isLoading, isFetching, error, refetch } = useGetAuoReportQuery(applied);
-  const loading = isLoading || isFetching;
+  const { data, currentData, isFetching, error, refetch } = useGetAuoReportQuery(applied);
+  // Skeletons only while there is no data for the current arguments; a
+  // background refetch keeps the cached data on screen.
+  const loading = isFetching && !currentData;
 
   const onChange = (field: AuoField, value: string) => {
     setDraft((d) => changeAuoParam(d, field, value));

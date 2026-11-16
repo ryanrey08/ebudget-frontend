@@ -103,8 +103,10 @@ export function QrrorView() {
   const [applied, setApplied] = useState<QrrorParams>(() => emptyQrrorParams(fy));
   const [errors, setErrors] = useState<Partial<Record<QrrorField, string>>>({});
   const [search, setSearch] = useState("");
-  const { data, isLoading, isFetching, error, refetch } = useGetQrrorReportQuery(applied);
-  const loading = isLoading || isFetching;
+  const { data, currentData, isFetching, error, refetch } = useGetQrrorReportQuery(applied);
+  // Skeletons only while there is no data for the current arguments; a
+  // background refetch keeps the cached data on screen.
+  const loading = isFetching && !currentData;
 
   const onChange = (field: QrrorField, value: string) => {
     setDraft((d) => changeQrrorParam(d, field, value));

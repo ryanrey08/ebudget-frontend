@@ -48,7 +48,7 @@ export function ValidateStep({ batch }: { batch: GaaUploadBatch }) {
       .filter((r) => !q || [r.orgCode, r.uacsObjectCode, r.description, r.office].some((f) => f.toLowerCase().includes(q)));
   }, [rows.data, filter, search]);
   const paging = useClientPagination(filtered, 10);
-  const loading = validating || rows.isLoading || rows.isFetching;
+  const loading = validating || (rows.isFetching && !rows.currentData);
   const total = summary?.total ?? 0;
   const pct = (n: number) => formatPercent(safeRatio(n, total), 1);
 

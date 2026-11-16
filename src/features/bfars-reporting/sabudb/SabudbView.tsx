@@ -46,8 +46,10 @@ export function SabudbView() {
   const [applied, setApplied] = useState<SabudbParams>(() => emptySaaodbParams(fy));
   const [errors, setErrors] = useState<Partial<Record<SaaodbField, string>>>({});
   const [search, setSearch] = useState("");
-  const { data, isLoading, isFetching, error, refetch } = useGetSabudbReportQuery(applied);
-  const loading = isLoading || isFetching;
+  const { data, currentData, isFetching, error, refetch } = useGetSabudbReportQuery(applied);
+  // Skeletons only while there is no data for the current arguments; a
+  // background refetch keeps the cached data on screen.
+  const loading = isFetching && !currentData;
 
   const onChange = (field: SaaodbField, value: string) => {
     setDraft((d) => ({ ...d, [field]: field === "fiscalYear" ? Number(value) || 0 : value }));

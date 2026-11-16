@@ -26,7 +26,7 @@ const columns: Column<Transaction>[] = [
 
 export function RecentTransactionsCard() {
   const fiscalYear = useFiscalYear();
-  const { data, isLoading, isFetching, error, refetch } = useGetRecentTransactionsQuery({ fiscalYear, limit: 6 });
+  const { data, currentData, isFetching, error, refetch } = useGetRecentTransactionsQuery({ fiscalYear, limit: 6 });
   return (
     <Card className="overflow-hidden">
       <CardHeader
@@ -42,7 +42,7 @@ export function RecentTransactionsCard() {
         columns={columns}
         rows={data}
         rowKey={(t) => t.id}
-        loading={isLoading || isFetching}
+        loading={isFetching && !currentData}
         error={error}
         onRetry={refetch}
         caption="Recent transactions"

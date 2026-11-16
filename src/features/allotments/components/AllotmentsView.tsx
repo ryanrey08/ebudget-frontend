@@ -93,7 +93,7 @@ export function AllotmentsView() {
   const [fetchAll, { isFetching: exporting }] = allotmentsApi.endpoints.getAllotments.useLazyQuery();
   const [deleteAllotment] = useDeleteAllotmentMutation();
   const s = summary.data;
-  const summaryLoading = summary.isLoading || summary.isFetching;
+  const summaryLoading = summary.isFetching && !summary.currentData;
   const resetPage = () => setPage(1);
 
   const onDelete = async (a: Allotment) => {
@@ -294,7 +294,7 @@ export function AllotmentsView() {
             columns={columns}
             rows={list.data?.items}
             rowKey={(a) => a.id}
-            loading={list.isLoading || list.isFetching}
+            loading={list.isFetching && !list.currentData}
             error={list.error}
             onRetry={list.refetch}
             emptyTitle="No allotments found"

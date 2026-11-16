@@ -81,7 +81,7 @@ export function AppropriationsView() {
 
   const fundName = (code: string) => lookups.data?.fundSources.find((f) => f.code === code)?.name ?? "";
   const s = summary.data;
-  const summaryLoading = summary.isLoading || summary.isFetching;
+  const summaryLoading = summary.isFetching && !summary.currentData;
   const resetPage = () => setPage(1);
 
   const onDelete = async (a: Appropriation) => {
@@ -333,7 +333,7 @@ export function AppropriationsView() {
             columns={columns}
             rows={list.data?.items}
             rowKey={(a) => a.id}
-            loading={list.isLoading || list.isFetching}
+            loading={list.isFetching && !list.currentData}
             error={list.error}
             onRetry={list.refetch}
             emptyTitle="No appropriations found"

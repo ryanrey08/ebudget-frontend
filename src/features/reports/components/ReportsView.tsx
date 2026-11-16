@@ -74,7 +74,7 @@ export function ReportsView() {
 
   const reports = useGetReportsQuery({ category, search: debouncedSearch });
   const history = useGetReportHistoryQuery();
-  const loading = reports.isLoading || reports.isFetching;
+  const loading = reports.isFetching && !reports.currentData;
 
   return (
     <>

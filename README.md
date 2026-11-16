@@ -23,8 +23,13 @@ Requirements: Node.js 20+ and npm.
 ```bash
 npm install
 cp .env.example .env.local   # already created for local development
-npm run dev                  # http://localhost:3000
+npm run dev                  # http://localhost:3000 (Turbopack)
 ```
+
+`npm run dev` compiles each page the first time it is opened (Turbopack is
+2–3× faster at this than webpack on a busy Mac; `npm run dev:webpack` is the
+old behaviour). For just *using* the app, `npm run build && npm start` serves
+precompiled pages, which switch in well under a second.
 
 Other scripts:
 
@@ -55,7 +60,7 @@ The login page has a **Use demo account** shortcut while the mock API is enabled
 | `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8000/api` | Base URL of the backend API |
 | `NEXT_PUBLIC_API_TIMEOUT_MS` | `30000` | Request timeout (real mode) |
 | `NEXT_PUBLIC_API_WITH_CREDENTIALS` | `true` | Send the session cookie with requests |
-| `NEXT_PUBLIC_MOCK_API_DELAY_MS` | `450` | Simulated latency for mock requests |
+| `NEXT_PUBLIC_MOCK_API_DELAY_MS` | `150` | Simulated latency for mock requests |
 | `NEXT_PUBLIC_MOCK_API_FAILURE_RATE` | `0` | Share (0–1) of mock requests that fail with 503, to test error states |
 | `NEXT_PUBLIC_MOCK_API_PERSIST` | `false` | Keep mock data changes in localStorage across reloads |
 

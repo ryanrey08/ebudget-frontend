@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import StoreProvider from "./StoreProvider";
 import { Toaster } from "@/components/shared/Toaster";
+import { NavigationProgress } from "@/components/shared/NavigationProgress";
 import { siteConfig } from "@/config/site";
 import "./globals.css";
 
@@ -22,6 +24,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className={inter.variable}>
       <body className="font-sans">
+        <Suspense fallback={null}>
+          <NavigationProgress />
+        </Suspense>
         <StoreProvider>
           {children}
           <Toaster />

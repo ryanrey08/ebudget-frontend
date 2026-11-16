@@ -85,7 +85,7 @@ export function ObligationManagementView() {
   const [fetchAll, { isFetching: exporting }] = obligationsApi.endpoints.getObligations.useLazyQuery();
   const [deleteObligation] = useDeleteObligationMutation();
   const s = summary.data;
-  const summaryLoading = summary.isLoading || summary.isFetching;
+  const summaryLoading = summary.isFetching && !summary.currentData;
   const resetPage = () => setPage(1);
 
   const reset = () => {
@@ -292,7 +292,7 @@ export function ObligationManagementView() {
           columns={columns}
           rows={items}
           rowKey={(o) => o.id}
-          loading={list.isLoading || list.isFetching}
+          loading={list.isFetching && !list.currentData}
           error={list.error}
           onRetry={list.refetch}
           rowClassName={(o) => cn(selected.has(o.id) && "bg-blue-50/50")}

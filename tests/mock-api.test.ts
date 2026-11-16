@@ -23,12 +23,12 @@ const FY = 2026;
 
 beforeAll(async () => {
   expect(getApiSettings().mode).toBe("mock");
-  await authService.login({ email: "juan.delacruz@mpc.edu.ph", password: "eBudget@2026", remember: false });
+  await authService.login({ email: "admin@ebudget.com", password: "admin123", remember: false });
 });
 
 describe("mock API: authentication and settings", () => {
   it("rejects a wrong password with the backend-style message", async () => {
-    const error = await authService.login({ email: "juan.delacruz@mpc.edu.ph", password: "wrong", remember: false }).catch(toPlainApiError);
+    const error = await authService.login({ email: "admin@ebudget.com", password: "wrong", remember: false }).catch(toPlainApiError);
     expect(error).toMatchObject({
       status: 422,
       code: "VALIDATION",
@@ -38,7 +38,7 @@ describe("mock API: authentication and settings", () => {
 
   it("returns the signed-in user and profile", async () => {
     const me = await authService.me();
-    expect(me.email).toBe("juan.delacruz@mpc.edu.ph");
+    expect(me.email).toBe("admin@ebudget.com");
     // Same shape as the backend's CurrentSystemUserResource.
     expect(me).toMatchObject({ name: "Juan Dela Cruz", is_active: true, system: { key: "ebudget" }, is_super_admin: false });
     expect(Array.isArray(me.permissions)).toBe(true);

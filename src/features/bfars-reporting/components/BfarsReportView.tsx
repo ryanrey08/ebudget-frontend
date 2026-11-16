@@ -24,8 +24,10 @@ const SERIES_COLORS = ["#2f7cf6", "#ec2027", "#3cb455", "#f7a01d", "#6b7280"];
 export function BfarsReportView({ meta }: { meta: BfarsReportMeta }) {
   const fiscalYear = useFiscalYear();
   const [quarter, setQuarter] = useState<BfarsReportParams["quarter"]>("Q1");
-  const { data, isLoading, isFetching, error, refetch } = useGetBfarsReportQuery({ id: meta.id, fiscalYear, quarter });
-  const loading = isLoading || isFetching;
+  const { data, currentData, isFetching, error, refetch } = useGetBfarsReportQuery({ id: meta.id, fiscalYear, quarter });
+  // Skeletons only while there is no data for the current arguments; a
+  // background refetch keeps the cached data on screen.
+  const loading = isFetching && !currentData;
 
   const exportCsv = () => {
     if (!data) return;

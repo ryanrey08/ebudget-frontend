@@ -101,7 +101,7 @@ export function RegistryView({ meta }: { meta: AllotmentClassMeta }) {
   const lookups = useGetRegistryLookupsQuery(meta.code);
   const appLookups = useGetAppropriationLookupsQuery();
   const [deleteAllotment] = useDeleteAllotmentMutation();
-  const loading = allotments.isLoading || registry.isLoading || allotments.isFetching;
+  const loading = (allotments.isFetching && !allotments.currentData) || registry.isLoading;
 
   // Disbursements per allotment, from the obligations recorded in this class.
   const disbursedBy = useMemo(() => {

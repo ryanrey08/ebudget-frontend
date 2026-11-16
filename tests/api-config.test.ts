@@ -41,7 +41,7 @@ describe("resolveApiConfig", () => {
   it("clamps numeric settings", () => {
     const config = resolveApiConfig({ timeoutMs: "5", mockDelayMs: "abc", mockFailureRate: "3" });
     expect(config.timeoutMs).toBe(1000);
-    expect(config.mockDelayMs).toBe(450);
+    expect(config.mockDelayMs).toBe(150);
     expect(config.mockFailureRate).toBe(1);
   });
 });

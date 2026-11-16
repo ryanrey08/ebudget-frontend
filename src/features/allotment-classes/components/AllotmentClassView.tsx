@@ -41,8 +41,10 @@ export function AllotmentClassView({ meta }: { meta: AllotmentClassMeta }) {
   const fiscalYear = useFiscalYear();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<ObligationStatus | "">("");
-  const { data, isLoading, isFetching, error, refetch } = useGetAllotmentClassRegistryQuery({ code: meta.code, fiscalYear });
-  const loading = isLoading || isFetching;
+  const { data, currentData, isFetching, error, refetch } = useGetAllotmentClassRegistryQuery({ code: meta.code, fiscalYear });
+  // Skeletons only while there is no data for the current arguments; a
+  // background refetch keeps the cached data on screen.
+  const loading = isFetching && !currentData;
   const s = data?.summary;
 
   const entries = data?.entries

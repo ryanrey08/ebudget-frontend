@@ -89,8 +89,10 @@ export function SabudbtrView() {
   const [draft, setDraft] = useState<SabudbtrParams>(applied);
   const [errors, setErrors] = useState<Partial<Record<SabudbtrField, string>>>({});
   const [search, setSearch] = useState("");
-  const { data, isLoading, isFetching, error, refetch } = useGetSabudbtrReportQuery(applied);
-  const loading = isLoading || isFetching;
+  const { data, currentData, isFetching, error, refetch } = useGetSabudbtrReportQuery(applied);
+  // Skeletons only while there is no data for the current arguments; a
+  // background refetch keeps the cached data on screen.
+  const loading = isFetching && !currentData;
 
   const onChange = (field: SabudbtrField, value: string) => {
     setDraft((d) => changeSabudbtrParam(d, field, value, data?.options));

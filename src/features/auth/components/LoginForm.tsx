@@ -61,8 +61,8 @@ export function LoginForm() {
   };
 
   const fillDemo = () => {
-    setValue("email", "juan.delacruz@mpc.edu.ph", { shouldValidate: true });
-    setValue("password", "eBudget@2026", { shouldValidate: true });
+    setValue("email", "admin@ebudget.com", { shouldValidate: true });
+    setValue("password", "admin123", { shouldValidate: true });
   };
 
   return (
@@ -118,7 +118,7 @@ export function LoginForm() {
         <div className="mt-6 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-3 text-xs text-gray-600">
           <p className="font-medium text-gray-800">Demo mode (mock API)</p>
           <p className="mt-1">
-            juan.delacruz@mpc.edu.ph · eBudget@2026{" "}
+            admin@ebudget.com · admin123{" "}
             <button type="button" onClick={fillDemo} className="font-medium text-brand-600 hover:underline">
               Use demo account
             </button>

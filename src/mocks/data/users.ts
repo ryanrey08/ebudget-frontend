@@ -11,13 +11,13 @@ export interface MockUserRecord {
 
 export const MOCK_USERS: MockUserRecord[] = [
   {
-    password: "eBudget@2026",
+    password: "admin123",
     user: {
       id: "usr-001",
       employeeId: "MPC-2019-0142",
       firstName: "Juan",
       lastName: "Dela Cruz",
-      email: "juan.delacruz@mpc.edu.ph",
+      email: "admin@ebudget.com",
       phone: "+63 917 555 0142",
       position: "Budget Officer III",
       office: "Budget Office",
