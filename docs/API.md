@@ -2,7 +2,7 @@
 
 > The complete endpoint specification (methods, payloads, validation, auth and error responses for every module, including BFARS 1–11 generation and report downloads) is in [API_ENDPOINTS.md](API_ENDPOINTS.md). This file keeps the field-level notes.
 
-All paths are relative to `NEXT_PUBLIC_API_BASE_URL`. Requests and responses are JSON unless noted. Authentication uses the `ebudget_session` httpOnly cookie, so the frontend sends `credentials: "include"` on every request.
+All paths are relative to the backend's `/api/v1/{system}`. The browser sends them to the same-origin data proxy (`/api/v1/<path>`), which attaches the bearer token from the `ebudget_session` httpOnly cookie and forwards them (see [API_INTEGRATION.md](API_INTEGRATION.md)). Requests and responses are JSON unless noted.
 
 TypeScript types referenced below live in `src/features/<feature>/types` and `src/types/api.ts`.
 
