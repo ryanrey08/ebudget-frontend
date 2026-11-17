@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_API_BASE_URL, resolveApiConfig } from "@/config/api.config";
+import { DATA_PROXY_BASE_URL, DEFAULT_API_BASE_URL, resolveApiConfig } from "@/config/api.config";
 
 describe("resolveApiConfig", () => {
   it("defaults to mock mode and the default base URL", () => {
@@ -10,10 +10,26 @@ describe("resolveApiConfig", () => {
   });
 
   it("reads NEXT_PUBLIC_API_MODE and strips trailing slashes from the base URL", () => {
-    const config = resolveApiConfig({ mode: "real", baseUrl: "https://api.example.gov.ph/api//" });
+    const config = resolveApiConfig({ mode: "real", baseUrl: "/ebudget/api/v1//" });
     expect(config.mode).toBe("real");
-    expect(config.baseUrl).toBe("https://api.example.gov.ph/api");
+    expect(config.baseUrl).toBe("/ebudget/api/v1");
   });
+
+  it("sends real-mode data requests to the same-origin data proxy by default", () => {
+    const config = resolveApiConfig({ mode: "real" });
+    expect(DEFAULT_API_BASE_URL).toBe(DATA_PROXY_BASE_URL);
+    expect(config.baseUrl).toBe("/api/v1");
+    expect(config.warnings).toEqual([]);
+  });
+
+  it.each(["https://api.example.gov.ph/api", "http://10.15.0.14/api/v1", "//backend.test/api", "/api/auth"])(
+    "never lets the browser call the backend directly (%s)",
+    (baseUrl) => {
+      const config = resolveApiConfig({ mode: "real", baseUrl });
+      expect(config.baseUrl).toBe(DATA_PROXY_BASE_URL);
+      expect(config.warnings[0]).toMatch(/same-origin path/);
+    },
+  );
 
   it("accepts the mode case-insensitively", () => {
     expect(resolveApiConfig({ mode: " REAL " }).mode).toBe("real");
@@ -32,7 +48,7 @@ describe("resolveApiConfig", () => {
     expect(resolveApiConfig({ mode: "mock", legacyUseMock: "false" }).mode).toBe("mock");
   });
 
-  it("rejects a base URL that is not http(s) or a path", () => {
+  it("rejects a base URL that is not a path", () => {
     const config = resolveApiConfig({ mode: "real", baseUrl: "ftp://x" });
     expect(config.baseUrl).toBe(DEFAULT_API_BASE_URL);
     expect(config.warnings.length).toBe(1);

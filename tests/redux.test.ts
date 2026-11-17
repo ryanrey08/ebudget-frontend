@@ -29,7 +29,7 @@ describe("Redux / RTK Query integration", () => {
   });
 
   it("keeps the session when the backend is unreachable but signs out on 401", async () => {
-    setApiSettings({ mode: "real", authMode: "real", baseUrl: "https://backend.test/api" });
+    setApiSettings({ mode: "real", authMode: "real", baseUrl: "/api/v1" });
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
     const store = makeStore();
     await store.dispatch(authApi.endpoints.getCurrentUser.initiate());
@@ -38,5 +38,22 @@ describe("Redux / RTK Query integration", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ message: "Unauthenticated." }), { status: 401, headers: { "content-type": "application/json" } })));
     await store.dispatch(authApi.endpoints.getCurrentUser.initiate(undefined, { forceRefetch: true }));
     expect(store.getState().auth.status).toBe("unauthenticated");
+  });
+
+  it("ends the session when the data proxy answers 401", async () => {
+    setApiSettings({ mode: "real", authMode: "real", baseUrl: "/api/v1" });
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ status: 401, code: "unauthenticated", detail: "Authentication is required." }), {
+        status: 401,
+        headers: { "content-type": "application/problem+json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const store = makeStore();
+    const result = await store.dispatch(appropriationsApi.endpoints.getAppropriationSummary.initiate({ fiscalYear: 2026 }));
+    expect(result.isError).toBe(true);
+    expect(fetchMock.mock.calls[0][0]).toMatch(/^\/api\/v1\/appropriations\/summary/);
+    expect(store.getState().auth.status).toBe("unauthenticated");
+    expect(store.getState().alerts.some((a) => a.title === "Session expired")).toBe(true);
   });
 });
