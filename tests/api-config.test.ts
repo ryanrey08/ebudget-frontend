@@ -22,7 +22,7 @@ describe("resolveApiConfig", () => {
     expect(config.warnings).toEqual([]);
   });
 
-  it.each(["https://api.example.gov.ph/api", "http://10.15.0.14/api/v1", "//backend.test/api", "/api/auth"])(
+  it.each(["https://api.example.gov.ph/api", "http://10.104.0.8/api/v1", "//backend.test/api", "/api/auth"])(
     "never lets the browser call the backend directly (%s)",
     (baseUrl) => {
       const config = resolveApiConfig({ mode: "real", baseUrl });

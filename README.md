@@ -243,7 +243,7 @@ page / component
 2. Set the session cookie `ebudget_session` (httpOnly, Secure, SameSite=Lax) on login and clear it on logout. If your cookie name differs, change `SESSION_COOKIE`.
 3. No CORS is needed: the browser only calls this app's `/api/v1/*` data proxy and `/api/auth/*` auth proxy, which call the backend from the server with `Authorization: Bearer <token>` (see [docs/API_INTEGRATION.md](docs/API_INTEGRATION.md)).
 4. Return errors as `{ "message": string, "errors"?: { [field]: string | string[] } }`. Responses may be plain objects or wrapped in `{ success, data, meta }`; adapt `src/lib/api/api-response.ts` if your format differs.
-5. Set `NEXT_PUBLIC_API_MODE=real` and the server-only `BACKEND_API_URL` (e.g. `http://10.15.0.14/api/v1`), then restart or rebuild.
+5. Set `NEXT_PUBLIC_API_MODE=real` and the server-only `BACKEND_API_URL` (e.g. `http://10.104.0.8/api/v1`), then restart or rebuild.
 
 No page, component, slice or service changes are required. The `src/mocks` folder can be deleted once the backend is live.
 

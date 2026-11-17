@@ -9,7 +9,7 @@ import { SESSION_COOKIE } from "@/lib/auth/session";
  * the backend replaced by a fetch stub.
  */
 const ORIGIN = "http://localhost:3000";
-const BACKEND = "http://10.15.0.14/api/v1";
+const BACKEND = "http://10.104.0.8/api/v1";
 
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...headers } });
@@ -200,7 +200,7 @@ describe("data proxy (src/app/api/v1/[...path])", () => {
   });
 
   it("does not follow or expose backend redirects", async () => {
-    fetchMock.mockResolvedValue(new Response(null, { status: 302, headers: { location: "http://10.15.0.14/login" } }));
+    fetchMock.mockResolvedValue(new Response(null, { status: 302, headers: { location: "http://10.104.0.8/login" } }));
     const res = await GET(request("/api/v1/appropriations"));
     expect(res.status).toBe(502);
     expect(res.headers.get("location")).toBeNull();

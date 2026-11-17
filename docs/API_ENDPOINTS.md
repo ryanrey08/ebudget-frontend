@@ -23,7 +23,7 @@ To connect a backend, set in `.env.local` and restart/rebuild:
 
 ```env
 NEXT_PUBLIC_API_MODE=real
-BACKEND_API_URL=http://10.15.0.14/api/v1   # server-only
+BACKEND_API_URL=http://10.104.0.8/api/v1   # server-only
 ```
 
 Nothing else changes: pages → RTK Query hooks → `src/services/*.service.ts` → `src/lib/api/api-client.ts` → mock API **or** `fetch`. In real mode a failed request is shown as an error; the app never falls back to dummy data.

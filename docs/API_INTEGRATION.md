@@ -5,7 +5,7 @@
 ```env
 NEXT_PUBLIC_API_MODE=real
 # server-only: where the Next.js server reaches the backend
-BACKEND_API_URL=http://10.15.0.14/api/v1
+BACKEND_API_URL=http://10.104.0.8/api/v1
 BACKEND_SYSTEM=ebudget
 ```
 

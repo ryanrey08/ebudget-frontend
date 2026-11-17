@@ -40,7 +40,7 @@ own origin: pages, `/api/auth/*` (sign-in) and, in `NEXT_PUBLIC_API_MODE=real`,
 `/api/v1/*` (eBudget data). Those route handlers call `BACKEND_API_URL` from the
 container with `Authorization: Bearer <token>` taken from the httpOnly session
 cookie. So the backend needs no CORS setup and no public address: it can sit on
-a private network (e.g. `http://10.15.0.14/api/v1`) with its public ports
+a private network (e.g. `http://10.104.0.8/api/v1`) with its public ports
 closed, and the frontend's HTTPS never meets an `http://` backend URL.
 
 The production image contains only `server.js`, the traced runtime
@@ -172,7 +172,7 @@ uses it:
     backend must listen on an address reachable from the Docker bridge (not
     only `127.0.0.1`).
   * Backend on another server: its URL. Prefer a private-network address
-    (e.g. `http://10.15.0.14/api/v1` on a DigitalOcean VPC), so the backend's
+    (e.g. `http://10.104.0.8/api/v1` on a DigitalOcean VPC), so the backend's
     public ports can be closed; a public `https://` URL also works.
   * Backend in another Compose project: either use the published host port as
     above, or attach this service to that project's network and use its
@@ -230,7 +230,7 @@ git clone <repo> ebudget-frontend && cd ebudget-frontend
 cat > .env.docker <<'ENV'
 NEXT_PUBLIC_API_MODE=real
 NEXT_PUBLIC_AUTH_MODE=real
-BACKEND_API_URL=http://10.15.0.14/api/v1
+BACKEND_API_URL=http://10.104.0.8/api/v1
 ENV
 docker compose --env-file .env.docker -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
@@ -246,7 +246,7 @@ docker buildx build --platform linux/amd64 \
 # on the server
 docker run -d --name ebudget-frontend --init --restart unless-stopped \
   -p 127.0.0.1:3000:3000 \
-  -e BACKEND_API_URL=http://10.15.0.14/api/v1 \
+  -e BACKEND_API_URL=http://10.104.0.8/api/v1 \
   -e BACKEND_SYSTEM=ebudget \
   --cap-drop ALL --security-opt no-new-privileges \
   registry.example.com/ebudget-frontend:1.0.0
