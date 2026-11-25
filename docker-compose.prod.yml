@@ -23,6 +23,12 @@ services:
       # "true" only to try the production build over plain http (drops the
       # Secure flag on the session cookie). Leave false behind HTTPS.
       SESSION_COOKIE_INSECURE: ${SESSION_COOKIE_INSECURE:-false}
+      # Keeps Node's heap under the container limit below, so it collects
+      # garbage instead of being killed when it reaches the limit.
+      NODE_OPTIONS: --max-old-space-size=256
+    # Several apps share a 2 GB server: one busy app must not starve the
+    # others. eBudget uses ~130 MB idle.
+    mem_limit: ${FRONTEND_MEM_LIMIT:-384m}
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/login || exit 1"]
