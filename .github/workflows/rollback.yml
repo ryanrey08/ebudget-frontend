@@ -1,0 +1,125 @@
+# Rolls production back to an earlier release: Actions > Rollback > Run workflow.
+#
+# Run it once with "confirm" empty to preview: it prints the live release, the
+# target and recent history, and changes nothing. Run it again with "confirm"
+# set to ROLLBACK to roll back.
+#
+# On the server, docker/deploy.sh checks out the target commit, starts its
+# image (kept on the server for the last five releases, else pulled from
+# GHCR) and waits for the /login health check; if the target is unhealthy,
+# the release that was live comes back.
+# A rollback lasts until the next deploy: revert or fix the bad commit on main.
+#
+# Uses the same SSH key, repository secrets and deploy lock as the deploy job
+# in deploy.yml, so a rollback and a deploy never overlap.
+name: Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_sha:
+        description: "Full 40-character commit to roll back to. Leave empty for the release before the live one."
+        required: false
+        default: ""
+      reason:
+        description: "Why you are rolling back"
+        required: true
+      confirm:
+        description: "Type ROLLBACK to roll back. Leave empty to preview only."
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: read
+    env:
+      # Inputs reach the shell only as environment variables, never pasted
+      # into the script, so they cannot inject commands.
+      TARGET_SHA: ${{ inputs.target_sha }}
+      REASON: ${{ inputs.reason }}
+      CONFIRM: ${{ inputs.confirm }}
+      SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+      KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+      DEPLOY_HOST: ${{ secrets.SERVER_HOST }}
+    steps:
+      - name: Check input
+        run: |
+          if [ -n "$TARGET_SHA" ] && ! printf '%s' "$TARGET_SHA" | grep -Eqx '[0-9a-f]{40}'; then
+            echo "::error::target_sha must be a full 40-character lowercase commit id"
+            exit 1
+          fi
+          if [ -z "$(printf '%s' "$REASON" | tr -d '[:space:]')" ]; then
+            echo "::error::reason is required"
+            exit 1
+          fi
+          for name in SSH_KEY KNOWN_HOSTS DEPLOY_HOST; do
+            if [ -z "${!name}" ]; then echo "::error::A repository secret ($name) is not set (Settings → Secrets and variables → Actions)."; exit 1; fi
+          done
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Show releases
+        id: releases
+        run: |
+          out=$(ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "root@$DEPLOY_HOST" releases </dev/null)
+          printf '%s\n' "$out"
+          live=$(printf '%s\n' "$out" | sed -n 's/^live=//p')
+          target=${TARGET_SHA:-$(printf '%s\n' "$out" | sed -n 's/^previous=//p')}
+          if [ -z "$target" ]; then
+            echo "::error::The server has no earlier release to roll back to. Pass target_sha."
+            exit 1
+          fi
+          if [ "$target" = "$live" ]; then
+            echo "::error::$target is already live"
+            exit 1
+          fi
+          echo "target=$target" >> "$GITHUB_OUTPUT"
+          if [ "$CONFIRM" = ROLLBACK ]; then mode="rolling back"; else mode="preview only"; fi
+          {
+            echo "### Rollback ($mode)"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Live | \`$live\` |"
+            echo "| Target | \`$target\` |"
+            echo "| Reason | $(printf '%s' "$REASON" | tr '|\n' '/ ') |"
+            echo "| Requested by | @$GITHUB_ACTOR |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Preview only
+        if: inputs.confirm != 'ROLLBACK'
+        env:
+          TARGET: ${{ steps.releases.outputs.target }}
+        run: |
+          echo "::notice::Preview only. Run again with confirm = ROLLBACK to roll back to $TARGET."
+
+      - name: Roll back
+        if: inputs.confirm == 'ROLLBACK'
+        env:
+          TARGET: ${{ steps.releases.outputs.target }}
+          # Expires when this job ends; used only if the image must be pulled.
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          printf '%s\n%s\n' "$GITHUB_ACTOR" "$REGISTRY_TOKEN" \
+            | ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+                -o ServerAliveInterval=30 -o ServerAliveCountMax=6 \
+                "root@$DEPLOY_HOST" "rollback $TARGET actions-rollback-$GITHUB_RUN_NUMBER"
+          echo "::notice::Production is on $TARGET. The next deploy from main replaces it."
+
+      - name: Remove the key from the runner
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

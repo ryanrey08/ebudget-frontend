@@ -260,6 +260,107 @@ The proxies pass the incoming `X-Forwarded-For` on to the backend, which
 rate-limits per client IP; configure the backend to trust it only from the
 frontend server's private address.
 
+The reverse proxy is also what makes per-user rate limits on the backend
+work: the auth proxy forwards the incoming `X-Forwarded-For` to the backend
+but cannot see the client's IP itself. Caddy (and nginx with
+`proxy_set_header X-Forwarded-For $remote_addr`) replaces any value a client
+sends with the real address. Never publish port 3000 directly to the
+internet: bind it to the loopback with `FRONTEND_PORT=127.0.0.1:3000` in
+`.env.docker`, otherwise clients can reach Node directly and spoof the header.
+
+Caddy setup with no domain yet (plain http, so `.env.docker` also needs
+`SESSION_COOKIE_INSECURE=true` until HTTPS is in place). The app moves to the
+loopback on port 3100, and Caddy serves it on port 80 and on the old port 3000,
+so existing `http://<server>:3000` links keep working:
+
+```bash
+apt install -y caddy
+printf ':80, :3000 {\n    reverse_proxy 127.0.0.1:3100\n}\n' > /etc/caddy/Caddyfile
+systemctl reload caddy
+# in .env.docker:
+#   FRONTEND_PORT=127.0.0.1:3100
+```
+
+With a domain, replace `:80, :3000` with the domain name. Caddy then obtains a
+certificate and serves HTTPS, and `SESSION_COOKIE_INSECURE` goes back to `false`.
+Each further app gets its own loopback port (3101, 3102, ...) and its own
+domain block in the same Caddyfile.
+
+## Automatic deploys (GitHub Actions)
+
+`.github/workflows/deploy.yml`:
+
+1. **check** (every pull request and push to `main`): `npm ci`, type check and
+   tests.
+2. **image** (`main` only, after check): builds the production image in
+   GitHub Actions and pushes it to
+   `ghcr.io/ryanrey08/ebudget-frontend:sha-<commit>`. Layers are cached, so
+   dependencies are reinstalled only when `package-lock.json` changes.
+   `NEXT_PUBLIC_*` values come from repository variables (Settings → Secrets
+   and variables → Actions → **Variables**); unset ones use the Dockerfile
+   defaults.
+3. **deploy**: connects over SSH and sends `deploy <commit>` plus a
+   short-lived, read-only registry token. Nothing else is sent.
+
+Nothing is built on the server: `next build` needs up to 2.5 GB of RAM, more
+than the server can spare next to the running apps. On the server, the
+Actions key is pinned to [`deploy.sh`](deploy.sh), installed as
+`/usr/local/sbin/ebudget-frontend-deploy`. The script:
+
+- pulls the image for that commit and checks out the same commit (compose files);
+- starts it and waits for the `/login` health check (`up --wait`);
+- if the new release is unhealthy, starts the previous commit and image again
+  and fails the job;
+- records every attempt in `/var/lib/ebudget-frontend/releases` and keeps the
+  images of the last five releases, so rollbacks work without GitHub.
+
+The container is capped at 384 MB (`FRONTEND_MEM_LIMIT` in `.env.docker`), so
+one busy app cannot starve the others on the server.
+
+### Rolling back
+
+GitHub: **Actions → Rollback → Run workflow**. Leave `target_sha` empty to go
+back one release (run it again to go back further), or give an earlier
+released commit, and enter a `reason`. Run it first with `confirm` empty: it
+only shows the live release and the target. Then run it again with `confirm`
+set to `ROLLBACK`. A rollback lasts until the next deploy from `main`.
+
+On the server, as root:
+
+```bash
+ebudget-frontend-deploy releases
+ebudget-frontend-deploy rollback
+```
+
+### One-time server setup
+
+As root, with the repo cloned to `/root/ebudget-frontend` and `.env.docker`
+in place:
+
+```bash
+# 1. Install the deploy script outside the checkout, so a rollback to an older
+#    commit cannot replace the script doing it. Repeat when deploy.sh changes.
+install -m 0755 /root/ebudget-frontend/docker/deploy.sh /usr/local/sbin/ebudget-frontend-deploy
+
+# 2. Pin the existing Actions key to it (no shell, no forwarding)
+cp -p ~/.ssh/authorized_keys ~/.ssh/authorized_keys.bak
+sed -i '/github-actions-deploy$/s|^ssh-|command="sh /usr/local/sbin/ebudget-frontend-deploy",restrict ssh-|' ~/.ssh/authorized_keys
+
+# 3. Print the value for the DEPLOY_KNOWN_HOSTS secret
+for f in /etc/ssh/ssh_host_*_key.pub; do
+  printf '%s %s\n' "<server ip>" "$(cut -d' ' -f1,2 "$f")"
+done
+```
+
+Repository secrets (Settings → Secrets and variables → Actions → **Repository
+secrets**; on a personal repository only the owner can add them):
+
+| Secret | Value |
+| --- | --- |
+| `SERVER_HOST` | The server's IP or host name. |
+| `SERVER_SSH_KEY` | The private half of the `github-actions-deploy` key, including the `BEGIN`/`END` lines. |
+| `DEPLOY_KNOWN_HOSTS` | The host key lines from step 3. They are read on the server itself, so a man-in-the-middle cannot substitute its own key. |
+
 ## Troubleshooting
 
 | Symptom | Cause and fix |
