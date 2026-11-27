@@ -2,7 +2,7 @@
 
 **Status:** proposed contract for the future backend (e.g. Laravel). None of these routes exist on a server yet. The frontend's mock API (`src/mocks`) implements every route below, so the app works today without a backend, and the real backend only has to implement the same contract.
 
-- Paths are relative to `NEXT_PUBLIC_API_BASE_URL` (e.g. `https://your-backend-domain.com/api`).
+- Paths are relative to the backend's `/api/v1/{system}` (`{BACKEND_API_URL}/{BACKEND_SYSTEM}`). The browser sends them to the same-origin data proxy `/api/v1/<path>`, which forwards them there (see [API_INTEGRATION.md](API_INTEGRATION.md)).
 - The single source of paths is [`src/lib/api/endpoints.ts`](../src/lib/api/endpoints.ts). Request/response types live in `src/features/<feature>/types` and `src/types/api.ts`.
 - [`docs/API.md`](API.md) has extra field-level notes per module (GAA template columns, BFARS row shapes, workflow rules).
 
@@ -13,9 +13,8 @@
 | Variable | Values | Purpose |
 | --- | --- | --- |
 | `NEXT_PUBLIC_API_MODE` | `mock` (default) \| `real` | Where requests are answered |
-| `NEXT_PUBLIC_API_BASE_URL` | URL, no trailing slash | Backend base URL (real mode) |
+| `NEXT_PUBLIC_API_BASE_URL` | same-origin path, default `/api/v1` | Data proxy path (real mode); never the backend's URL |
 | `NEXT_PUBLIC_API_TIMEOUT_MS` | number, default `30000` | Request timeout (real mode) |
-| `NEXT_PUBLIC_API_WITH_CREDENTIALS` | `true` (default) \| `false` | Send cookies (session cookie) |
 | `NEXT_PUBLIC_MOCK_API_DELAY_MS` | number, default `150` | Simulated latency (mock mode) |
 | `NEXT_PUBLIC_MOCK_API_FAILURE_RATE` | `0`–`1`, default `0` | Share of mock requests that fail with 503 |
 | `NEXT_PUBLIC_MOCK_API_PERSIST` | `true` \| `false` (default) | Keep mock changes in localStorage across reloads |
@@ -23,8 +22,8 @@
 To connect a backend, set in `.env.local` and restart/rebuild:
 
 ```env
-NEXT_PUBLIC_API_BASE_URL=https://your-backend-domain.com/api
 NEXT_PUBLIC_API_MODE=real
+BACKEND_API_URL=http://10.15.0.14/api/v1   # server-only
 ```
 
 Nothing else changes: pages → RTK Query hooks → `src/services/*.service.ts` → `src/lib/api/api-client.ts` → mock API **or** `fetch`. In real mode a failed request is shown as an error; the app never falls back to dummy data.

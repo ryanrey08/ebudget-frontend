@@ -107,6 +107,20 @@ export class BackendUnavailable extends Error {
   }
 }
 
+/**
+ * Copies the request-tracing and client-address headers of the browser's
+ * request onto a backend request: a well-formed X-Request-Id, and
+ * X-Forwarded-For so the backend rate-limits per browser, not per proxy. The
+ * backend only trusts X-Forwarded-For from private networks
+ * (bootstrap/app.php).
+ */
+export function setForwardingHeaders(headers: Headers, request: NextRequest) {
+  const requestId = request.headers.get("x-request-id");
+  if (requestId && /^[A-Za-z0-9._-]{1,64}$/.test(requestId)) headers.set("X-Request-Id", requestId);
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  if (forwardedFor) headers.set("X-Forwarded-For", forwardedFor);
+}
+
 export async function callBackend(
   request: NextRequest,
   path: string,
@@ -116,12 +130,7 @@ export async function callBackend(
   const headers = new Headers({ Accept: "application/json" });
   if (init.body !== undefined) headers.set("Content-Type", "application/json");
   if (init.token) headers.set("Authorization", `Bearer ${init.token}`);
-  const requestId = request.headers.get("x-request-id");
-  if (requestId && /^[A-Za-z0-9._-]{1,64}$/.test(requestId)) headers.set("X-Request-Id", requestId);
-  // Lets the backend rate-limit per browser, not per proxy. The backend only
-  // trusts X-Forwarded-For from private networks (bootstrap/app.php).
-  const forwardedFor = request.headers.get("x-forwarded-for");
-  if (forwardedFor) headers.set("X-Forwarded-For", forwardedFor);
+  setForwardingHeaders(headers, request);
 
   let response: Response;
   try {
@@ -142,6 +151,11 @@ export async function callBackend(
     );
   }
 
+  return readBackendResult(response);
+}
+
+/** Reads a backend response as JSON; a body that is not JSON becomes `null`. */
+export async function readBackendResult(response: Response): Promise<BackendResult> {
   const text = response.status === 204 ? "" : await response.text();
   let body: unknown = null;
   if (text) {
@@ -193,8 +207,3 @@ export function clearSessionCookie(response: NextResponse) {
   response.cookies.set({ name: SESSION_COOKIE, value: "", httpOnly: true, secure: secureCookies(), sameSite: "lax", path: "/", maxAge: 0 });
 }
 
-/** http://backend/api/v1/ebudget/appropriations/5 → /api/backend/appropriations/5 (used by the data proxy). */
-export function toProxyLocation(location: string, system: string): string {
-  const match = new RegExp(`/api/v1/${system}/(.*)$`).exec(location);
-  return match ? `/api/backend/${match[1]}` : location;
-}

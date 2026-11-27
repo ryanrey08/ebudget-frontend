@@ -56,10 +56,9 @@ The login page has a **Use demo account** shortcut while the mock API is enabled
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `NEXT_PUBLIC_API_MODE` | `mock` | `mock` answers every request from `src/mocks`; `real` calls the backend |
-| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8000/api` | Base URL of the backend API |
+| `NEXT_PUBLIC_API_MODE` | `mock` | `mock` answers every request from `src/mocks`; `real` sends them through the same-origin data proxy (`/api/v1/*`) to `BACKEND_API_URL` |
+| `NEXT_PUBLIC_API_BASE_URL` | `/api/v1` | Same-origin path of the data proxy (a full URL is ignored: the browser never calls the backend) |
 | `NEXT_PUBLIC_API_TIMEOUT_MS` | `30000` | Request timeout (real mode) |
-| `NEXT_PUBLIC_API_WITH_CREDENTIALS` | `true` | Send the session cookie with requests |
 | `NEXT_PUBLIC_MOCK_API_DELAY_MS` | `150` | Simulated latency for mock requests |
 | `NEXT_PUBLIC_MOCK_API_FAILURE_RATE` | `0` | Share (0–1) of mock requests that fail with 503, to test error states |
 | `NEXT_PUBLIC_MOCK_API_PERSIST` | `false` | Keep mock data changes in localStorage across reloads |
@@ -242,9 +241,9 @@ page / component
 
 1. Implement the endpoints in [docs/API_ENDPOINTS.md](docs/API_ENDPOINTS.md) (field notes in [docs/API.md](docs/API.md)) with the documented request/response types (the TypeScript types in `src/features/*/types` are the contract).
 2. Set the session cookie `ebudget_session` (httpOnly, Secure, SameSite=Lax) on login and clear it on logout. If your cookie name differs, change `SESSION_COOKIE`.
-3. Enable CORS with credentials for the frontend origin, or serve the API from the same origin.
+3. No CORS is needed: the browser only calls this app's `/api/v1/*` data proxy and `/api/auth/*` auth proxy, which call the backend from the server with `Authorization: Bearer <token>` (see [docs/API_INTEGRATION.md](docs/API_INTEGRATION.md)).
 4. Return errors as `{ "message": string, "errors"?: { [field]: string | string[] } }`. Responses may be plain objects or wrapped in `{ success, data, meta }`; adapt `src/lib/api/api-response.ts` if your format differs.
-5. Set `NEXT_PUBLIC_API_MODE=real` and `NEXT_PUBLIC_API_BASE_URL` to the API URL, then restart or rebuild.
+5. Set `NEXT_PUBLIC_API_MODE=real` and the server-only `BACKEND_API_URL` (e.g. `http://10.15.0.14/api/v1`), then restart or rebuild.
 
 No page, component, slice or service changes are required. The `src/mocks` folder can be deleted once the backend is live.
 

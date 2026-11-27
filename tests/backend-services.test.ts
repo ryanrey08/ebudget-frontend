@@ -6,7 +6,7 @@ import { isDemoOnlyPath } from "@/config/api.config";
 import { accessService, allotmentRecordsService, appropriationLinesService, masterDataService } from "@/services/backend";
 
 /** Backend services against a fetch stub shaped like the real eBudget backend (backend-api main). */
-const BASE = "/api/backend";
+const BASE = "/api/v1";
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 
 describe("backend services", () => {

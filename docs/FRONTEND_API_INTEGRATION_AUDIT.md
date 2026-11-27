@@ -29,7 +29,7 @@ module: in real mode those requests are answered by the built-in demo API (`DEMO
 
 | Feature | Backend | Status | Notes |
 |---|---|---|---|
-| Data proxy `/api/backend/[...path]` | `/api/v1/{system}/*` | Integrated | Adds the bearer token from the cookie; passes JSON, multipart and downloads; rewrites `Location`; CSRF checks like the auth proxy |
+| Data proxy `/api/v1/[...path]` | `/api/v1/{system}/*` | Integrated | Adds the bearer token from the cookie; passes JSON, multipart and downloads; rewrites `Location`; CSRF checks like the auth proxy |
 | Mode switch | `NEXT_PUBLIC_API_MODE` | Integrated | `real`: backend modules hit the proxy; demo modules stay on demo data (`NEXT_PUBLIC_API_DEMO_MODULES`, default true). `mock`: backend-only pages show "needs the backend" |
 | Header fiscal year | `GET /master-data/fiscal-years` | Integrated | Real mode lists the backend's years; pages resolve the year to `fiscal_year_id` |
 

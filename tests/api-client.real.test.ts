@@ -3,7 +3,7 @@ import { apiClient, buildUrl, setApiSettings } from "@/lib/api/api-client";
 import { clearAuthToken, onAuthEvent, setAuthToken } from "@/lib/api/auth-token";
 import { toPlainApiError } from "@/lib/api/api-error";
 
-const BASE = "https://backend.test/api";
+const BASE = "/api/v1";
 
 function jsonResponse(body: unknown, status = 200, headers: Record<string, string> = {}) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...headers } });
@@ -38,7 +38,8 @@ describe("api client in real mode", () => {
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe(`${BASE}/appropriations?fiscalYear=2026&page=1`);
     expect(init.method).toBe("GET");
-    expect(init.credentials).toBe("include");
+    expect(init.credentials).toBe("same-origin");
+    expect(init.headers.get("X-Requested-With")).toBe("XMLHttpRequest");
     expect(init.headers.get("Accept")).toBe("application/json");
   });
 

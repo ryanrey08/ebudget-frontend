@@ -6,7 +6,12 @@
  * backend only requires changing the environment variables below:
  *
  *   NEXT_PUBLIC_API_MODE=mock | real
- *   NEXT_PUBLIC_API_BASE_URL=https://your-backend-domain.com/api
+ *
+ * In real mode the browser only ever calls this app's own origin: data
+ * requests go to the Next.js data proxy (/api/v1/*, src/app/api/v1) and
+ * sign-in to the auth proxy (/api/auth/*). Those route handlers call the
+ * backend from the server (server-only BACKEND_API_URL) with the bearer token
+ * from the httpOnly session cookie. The browser never calls the backend.
  *
  * NEXT_PUBLIC_* values are inlined into the browser bundle at build time, so
  * only public, non-sensitive settings may live here. Never put API keys,
@@ -30,17 +35,12 @@ export interface ApiConfig {
    */
   authMode: ApiMode;
   /**
-   * Data API base URL without a trailing slash. Defaults to the same-origin
-   * data proxy `/api/backend` (src/app/api/backend), which forwards to the
-   * backend's /api/v1/{system} routes with the httpOnly session token. An
-   * absolute URL calls a backend directly (it must then allow CORS and accept
-   * a bearer token set with setAuthToken).
+   * Same-origin path of the data proxy, without a trailing slash (default
+   * /api/v1). Always a path on this app's origin, never the backend's URL.
    */
   baseUrl: string;
   /** Request timeout for real requests, in milliseconds. */
   timeoutMs: number;
-  /** Send cookies with requests (needed for the httpOnly session cookie). */
-  withCredentials: boolean;
   /** Simulated latency of the mock API, in milliseconds. */
   mockDelayMs: number;
   /** Share (0–1) of mock requests that fail with a simulated server error. */
@@ -58,9 +58,12 @@ export interface ApiConfig {
   warnings: string[];
 }
 
-/** Same-origin data proxy (src/app/api/backend/[...path]). */
-export const BACKEND_PROXY_BASE_URL = "/api/backend";
-export const DEFAULT_API_BASE_URL = BACKEND_PROXY_BASE_URL;
+/**
+ * Same-origin base path of the Next.js data proxy (src/app/api/v1/[...path]),
+ * which forwards to {BACKEND_API_URL}/{BACKEND_SYSTEM}/... on the server.
+ */
+export const DATA_PROXY_BASE_URL = "/api/v1";
+export const DEFAULT_API_BASE_URL = DATA_PROXY_BASE_URL;
 
 interface RawApiEnv {
   mode?: string;
@@ -68,7 +71,6 @@ interface RawApiEnv {
   legacyUseMock?: string;
   baseUrl?: string;
   timeoutMs?: string;
-  withCredentials?: string;
   mockDelayMs?: string;
   mockFailureRate?: string;
   mockPersist?: string;
@@ -103,11 +105,16 @@ export function resolveApiConfig(raw: RawApiEnv): ApiConfig {
   if (requestedAuth === "mock" || requestedAuth === "real") authMode = requestedAuth;
   else if (requestedAuth) warnings.push(`NEXT_PUBLIC_AUTH_MODE="${raw.authMode}" is not supported (use "mock" or "real"); using "${mode}".`);
 
+  // Only a same-origin path is accepted: the browser must never call the
+  // backend directly (no token, CORS or mixed content; the backend may be on a
+  // private network). The backend's address is the server-only BACKEND_API_URL.
   let baseUrl = (raw.baseUrl ?? "").trim().replace(/\/+$/, "");
   if (!baseUrl) {
-    baseUrl = DEFAULT_API_BASE_URL; // the same-origin data proxy
-  } else if (!/^https?:\/\//i.test(baseUrl) && !baseUrl.startsWith("/")) {
-    warnings.push(`NEXT_PUBLIC_API_BASE_URL="${raw.baseUrl}" must be an absolute http(s) URL or a path starting with "/"; using ${DEFAULT_API_BASE_URL}.`);
+    baseUrl = DEFAULT_API_BASE_URL;
+  } else if (!baseUrl.startsWith("/") || baseUrl.startsWith("//") || /^\/api\/auth(\/|$)/i.test(baseUrl)) {
+    warnings.push(
+      `NEXT_PUBLIC_API_BASE_URL="${raw.baseUrl}" must be a same-origin path such as ${DEFAULT_API_BASE_URL} (set the backend's address in the server-only BACKEND_API_URL); using ${DEFAULT_API_BASE_URL}.`,
+    );
     baseUrl = DEFAULT_API_BASE_URL;
   }
 
@@ -116,7 +123,6 @@ export function resolveApiConfig(raw: RawApiEnv): ApiConfig {
     authMode,
     baseUrl,
     timeoutMs: toNumber(raw.timeoutMs, 30_000, 1_000, 300_000),
-    withCredentials: raw.withCredentials?.trim().toLowerCase() !== "false",
     mockDelayMs: toNumber(raw.mockDelayMs, 150, 0, 10_000),
     mockFailureRate: toNumber(raw.mockFailureRate, 0, 0, 1),
     mockPersist: raw.mockPersist?.trim().toLowerCase() === "true",
@@ -132,7 +138,6 @@ export const apiConfig: Readonly<ApiConfig> = Object.freeze(
     legacyUseMock: process.env.NEXT_PUBLIC_USE_MOCK_API,
     baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
     timeoutMs: process.env.NEXT_PUBLIC_API_TIMEOUT_MS,
-    withCredentials: process.env.NEXT_PUBLIC_API_WITH_CREDENTIALS,
     mockDelayMs: process.env.NEXT_PUBLIC_MOCK_API_DELAY_MS,
     mockFailureRate: process.env.NEXT_PUBLIC_MOCK_API_FAILURE_RATE,
     mockPersist: process.env.NEXT_PUBLIC_MOCK_API_PERSIST,

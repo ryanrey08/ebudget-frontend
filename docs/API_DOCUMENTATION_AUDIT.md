@@ -58,7 +58,7 @@ No endpoint path, method, payload or parameter name needed correcting. One respo
 
 ## Endpoint comparison
 
-All requests: base `/api/v1/ebudget` (reached through the same-origin proxy `/api/backend`),
+All requests: base `/api/v1/ebudget` (reached through the same-origin proxy `/api/v1`),
 `Accept: application/json`, `X-Requested-With: XMLHttpRequest`, `Authorization: Bearer <token>` added
 by the proxy from the httpOnly cookie (login excepted), JSON bodies with `Content-Type:
 application/json`, multipart bodies with the browser's boundary. Errors: `application/problem+json`
@@ -266,7 +266,7 @@ Single resources come as `{ data: … }` (the client unwraps `data`), lists as `
 | Call | What it is | Status |
 |---|---|---|
 | `/api/auth/login`, `/api/auth/me`, `/api/auth/logout`, `/api/auth/password` | The frontend's own Next.js route handlers in front of the documented `/auth/*` (token kept in an httpOnly cookie) | Intended; documented in API_INTEGRATION.md |
-| `/api/backend/*` | The frontend's data proxy in front of every documented endpoint | Intended |
+| `/api/v1/*` | The frontend's data proxy in front of every documented endpoint | Intended |
 | `/dashboard/*`, `/obligations/*`, `/allotment-classes/{code}/*`, `/allotments/registry`, `/allotments/{id}/registry`, `/bfars/*`, `/reports`, `/reports/history/*`, `/reports/generate`, `/notifications/*`, `/profile/*` | Demo modules: the backend has no such endpoints. Answered by the demo API in real mode (`DEMO_ONLY_PATHS`), pages show "Demo data" | Kept on purpose until the backend provides them; no silent fallback when a real call fails |
 | Demo `appropriationsService` / `gaaService` / `allotmentsService` (old contract on `/appropriations`, `/gaa/*`, `/allotments`) | Lookups and lists for the demo obligation and RAO registry pages | Now marked `demo`, never sent to the backend |
 | `/auth/register`, `/auth/forgot-password`, `/auth/reset-password` | Mock auth only | Not available with real auth (no backend endpoints) |
@@ -284,7 +284,7 @@ Single resources come as `{ data: … }` (the client unwraps `data`), lists as `
 
 Backend `main` `97ede5b` in Docker (`laravel-api`), migrated and seeded; frontend production build
 (real mode) on `localhost:3010`, signed in as `admin@ebudget.com` (super admin). Requests went
-through the frontend's own proxies (`/api/auth/*`, `/api/backend/*`), and the pages were opened in a
+through the frontend's own proxies (`/api/auth/*`, `/api/v1/*`), and the pages were opened in a
 browser.
 
 | Area | Exercised live | Result |

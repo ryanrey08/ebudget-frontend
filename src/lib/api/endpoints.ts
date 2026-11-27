@@ -6,7 +6,7 @@
 /**
  * Routes of the eBudget backend (backend-api `main`, routes/api.php and
  * routes/ebudget.php), relative to /api/v1/ebudget. In real mode they reach
- * the backend through the data proxy (/api/backend/*). They have no mock
+ * the backend through the data proxy (/api/v1/*). They have no mock
  * handlers: services call them with `requiresBackend`.
  */
 export const BACKEND = {

@@ -1,11 +1,12 @@
 /**
  * Central place for API authentication state.
  *
- * Authentication itself does NOT use this token store: the backend's bearer
- * token is kept by the Next.js auth proxy in an httpOnly cookie
- * (src/lib/server/backend-auth.ts), so scripts never see it. This module
- * still carries the client's 401/403 session events, and `setAuthToken` is
- * kept for data APIs that may need an explicit bearer token later.
+ * Real mode does NOT use this token store: the backend's bearer token is kept
+ * by the Next.js auth proxy in an httpOnly cookie
+ * (src/lib/server/backend-auth.ts), and the data proxy (src/app/api/v1)
+ * attaches it on the server, so scripts never see it. The data proxy ignores
+ * any Authorization header the browser sends. This module still carries the
+ * client's 401/403 session events.
  *
  * Tokens are kept in memory and, so a reload keeps the session, in
  * sessionStorage (cleared when the tab closes). Nothing is ever hardcoded and

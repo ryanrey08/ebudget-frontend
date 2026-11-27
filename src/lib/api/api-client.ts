@@ -10,7 +10,10 @@ import { clearAuthToken, emitAuthEvent, getAuthToken } from "./auth-token";
  *
  * - mode "mock": the request is answered by the in-browser mock API
  *   (src/mocks/mock-api.ts), which uses the same paths, envelopes and errors.
- * - mode "real": the request is sent with fetch to `apiConfig.baseUrl`.
+ * - mode "real": the request is sent with fetch to `apiConfig.baseUrl`, the
+ *   same-origin Next.js data proxy (/api/v1, src/app/api/v1), which adds the
+ *   bearer token from the httpOnly session cookie and calls the backend from
+ *   the server. The browser never calls the backend directly.
  *
  * In real mode a failed request is reported as an error. It never falls back
  * to mock data. Only the modules the backend has no endpoints for at all
@@ -111,7 +114,9 @@ export const fetchTransport: ApiTransport = async (config, settings) => {
       method,
       headers,
       body,
-      credentials: settings.withCredentials ? "include" : "same-origin",
+      // Same-origin only: the httpOnly session cookie goes to this app's own
+      // proxy routes and nowhere else.
+      credentials: "same-origin",
       signal: controller.signal,
     });
     return { status: response.status, body: await parseBody(response, config.responseType), headers: response.headers };
@@ -165,7 +170,7 @@ export function resolveRequestSettings(url: string, settings: ApiConfig): { mode
   }
   if (settings.authMode === "mock") return { mode: "mock", settings };
   // Same-origin proxy: the httpOnly session cookie is sent automatically.
-  return { mode: "real", settings: { ...settings, baseUrl: AUTH_PROXY_BASE_URL, withCredentials: false } };
+  return { mode: "real", settings: { ...settings, baseUrl: AUTH_PROXY_BASE_URL } };
 }
 
 export const BACKEND_REQUIRED_MESSAGE =

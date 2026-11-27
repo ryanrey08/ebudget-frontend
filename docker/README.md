@@ -26,6 +26,7 @@ and is reached over the network.
           ┌──────────────────────▼──────────────────────┐
           │ container ebudget-frontend(-dev)             │
           │ Next.js server  /api/auth/* auth proxy       │
+          │                 /api/v1/*   data proxy       │
           │ BACKEND_API_URL (read at runtime)            │
           └──────────────────────┬──────────────────────┘
                                  │ http://host.docker.internal:8080/api/v1
@@ -33,6 +34,14 @@ and is reached over the network.
           │ Laravel backend (separate Compose project)  │
           └─────────────────────────────────────────────┘
 ```
+
+The browser never calls the backend directly. It only talks to the frontend's
+own origin: pages, `/api/auth/*` (sign-in) and, in `NEXT_PUBLIC_API_MODE=real`,
+`/api/v1/*` (eBudget data). Those route handlers call `BACKEND_API_URL` from the
+container with `Authorization: Bearer <token>` taken from the httpOnly session
+cookie. So the backend needs no CORS setup and no public address: it can sit on
+a private network (e.g. `http://10.15.0.14/api/v1`) with its public ports
+closed, and the frontend's HTTPS never meets an `http://` backend URL.
 
 The production image contains only `server.js`, the traced runtime
 `node_modules` (Next, React, sharp for `next/image`), `.next/static` and
@@ -117,8 +126,8 @@ Next.js has two kinds of variables, and Docker treats them differently:
 
 | Kind | Examples | When it is read | How to change it in Docker |
 | --- | --- | --- | --- |
-| `NEXT_PUBLIC_*` (browser-visible) | `NEXT_PUBLIC_API_MODE`, `NEXT_PUBLIC_AUTH_MODE`, `NEXT_PUBLIC_API_BASE_URL` | **Build time.** `next build` inlines the values into the JavaScript bundle. | Prod: build args, then **rebuild** the image. Dev: container env, restart the container. |
-| Server-only | `BACKEND_API_URL`, `BACKEND_SYSTEM`, `BACKEND_TIMEOUT_MS`, `SESSION_COOKIE_INSECURE`, `PORT` | **Runtime**, by the Node server (auth proxy in `src/app/api/auth`). | Container env, **restart** the container. No rebuild. |
+| `NEXT_PUBLIC_*` (browser-visible) | `NEXT_PUBLIC_API_MODE`, `NEXT_PUBLIC_AUTH_MODE` | **Build time.** `next build` inlines the values into the JavaScript bundle. | Prod: build args, then **rebuild** the image. Dev: container env, restart the container. |
+| Server-only | `BACKEND_API_URL`, `BACKEND_SYSTEM`, `BACKEND_TIMEOUT_MS`, `SESSION_COOKIE_INSECURE`, `PORT` | **Runtime**, by the Node server (auth proxy in `src/app/api/auth`, data proxy in `src/app/api/v1`). | Container env, **restart** the container. No rebuild. |
 
 Everything in `NEXT_PUBLIC_*` is visible to anyone who opens the app. Never put
 secrets there. No `.env` file is copied into any image (`.dockerignore`).
@@ -139,9 +148,8 @@ Defaults:
 | Variable | Default | Notes |
 | --- | --- | --- |
 | `FRONTEND_PORT` | `3000` | Host port. The container always listens on 3000. |
-| `NEXT_PUBLIC_API_MODE` | `mock` | `mock` serves eBudget data from the in-browser mock API. |
+| `NEXT_PUBLIC_API_MODE` | `mock` | `mock` serves eBudget data from the in-browser mock API; `real` sends it through the `/api/v1/*` data proxy to `BACKEND_API_URL`. |
 | `NEXT_PUBLIC_AUTH_MODE` | `real` | Sign-in through the auth proxy and the backend. `mock` = demo accounts. |
-| `NEXT_PUBLIC_API_BASE_URL` | `/api/backend` | Data API as seen **from the browser**. |
 | `BACKEND_API_URL` | `http://host.docker.internal:8080/api/v1` | Backend as seen **from inside the container**. |
 | `BACKEND_SYSTEM` | `ebudget` | `ebudget`, `engas` or `sims`. |
 | `SESSION_COOKIE_INSECURE` | `false` | Prod only. Browsers accept Secure cookies on `http://localhost`; set `true` only to test the prod image over plain http on another host name. |
@@ -150,10 +158,12 @@ Defaults:
 ## API connectivity
 
 `localhost` inside a container is the container itself, not your Mac and not
-another container. Two different addresses matter:
+another container. Only one backend address matters, and only the container
+uses it:
 
-* **Server side (`BACKEND_API_URL`)**: used by the Next.js auth proxy inside the
-  container.
+* **`BACKEND_API_URL`**: used by the Next.js auth and data proxies inside the
+  container. `/api/v1/<path>` on the frontend is forwarded to
+  `{BACKEND_API_URL}/{BACKEND_SYSTEM}/<path>`.
   * Backend in Docker Desktop on the same Mac, published on port 8080 (the
     Laravel stack's nginx): `http://host.docker.internal:8080/api/v1`
     (default).
@@ -161,14 +171,17 @@ another container. Two different addresses matter:
     works because Compose maps `host.docker.internal` to the host gateway. The
     backend must listen on an address reachable from the Docker bridge (not
     only `127.0.0.1`).
-  * Backend on another server: its URL, e.g. `https://api.example.gov.ph/api/v1`.
+  * Backend on another server: its URL. Prefer a private-network address
+    (e.g. `http://10.15.0.14/api/v1` on a DigitalOcean VPC), so the backend's
+    public ports can be closed; a public `https://` URL also works.
   * Backend in another Compose project: either use the published host port as
     above, or attach this service to that project's network and use its
     service name (e.g. `http://nginx/api/v1`).
-* **Browser side (`NEXT_PUBLIC_API_BASE_URL`)**: used by the user's browser in
-  `NEXT_PUBLIC_API_MODE=real`, so it must be an address the browser can reach:
-  `http://localhost:8080/...` locally, the public `https://` URL in production.
-  Changing it requires a rebuild of the prod image.
+* **Browser side**: nothing to configure. The browser only calls the
+  frontend's own origin (`/api/auth/*`, `/api/v1/*`), so no backend address is
+  compiled into the bundle and the backend needs no CORS rules for it.
+  (`NEXT_PUBLIC_API_BASE_URL` is no longer passed to the build; if it is set
+  elsewhere it must be a same-origin path, and a full URL is ignored.)
 
 Check from inside the running container:
 
@@ -217,8 +230,7 @@ git clone <repo> ebudget-frontend && cd ebudget-frontend
 cat > .env.docker <<'ENV'
 NEXT_PUBLIC_API_MODE=real
 NEXT_PUBLIC_AUTH_MODE=real
-NEXT_PUBLIC_API_BASE_URL=https://api.example.gov.ph/api
-BACKEND_API_URL=https://api.example.gov.ph/api/v1
+BACKEND_API_URL=http://10.15.0.14/api/v1
 ENV
 docker compose --env-file .env.docker -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
@@ -229,22 +241,125 @@ Option B, build once and ship the image (build for the server's CPU):
 # on the build machine (Apple Silicon Macs: target amd64 servers explicitly)
 docker buildx build --platform linux/amd64 \
   --build-arg NEXT_PUBLIC_API_MODE=real \
-  --build-arg NEXT_PUBLIC_API_BASE_URL=https://api.example.gov.ph/api \
   -t registry.example.com/ebudget-frontend:1.0.0 --push .
 
 # on the server
 docker run -d --name ebudget-frontend --init --restart unless-stopped \
   -p 127.0.0.1:3000:3000 \
-  -e BACKEND_API_URL=https://api.example.gov.ph/api/v1 \
+  -e BACKEND_API_URL=http://10.15.0.14/api/v1 \
   -e BACKEND_SYSTEM=ebudget \
   --cap-drop ALL --security-opt no-new-privileges \
   registry.example.com/ebudget-frontend:1.0.0
 ```
 
 Put a TLS-terminating reverse proxy (nginx, Caddy, Traefik) in front of port
-3000 and forward the `Host` (or `X-Forwarded-Host`) header: the auth proxy
-compares it with the browser's `Origin` to reject cross-site requests, and the
-session cookie is `Secure`, so the site must be served over HTTPS.
+3000 and forward the `Host` (or `X-Forwarded-Host`) header: the auth and data
+proxies compare it with the browser's `Origin` to reject cross-site requests,
+and the session cookie is `Secure`, so the site must be served over HTTPS.
+The proxies pass the incoming `X-Forwarded-For` on to the backend, which
+rate-limits per client IP; configure the backend to trust it only from the
+frontend server's private address.
+
+The reverse proxy is also what makes per-user rate limits on the backend
+work: the auth proxy forwards the incoming `X-Forwarded-For` to the backend
+but cannot see the client's IP itself. Caddy (and nginx with
+`proxy_set_header X-Forwarded-For $remote_addr`) replaces any value a client
+sends with the real address. Never publish port 3000 directly to the
+internet: bind it to the loopback with `FRONTEND_PORT=127.0.0.1:3000` in
+`.env.docker`, otherwise clients can reach Node directly and spoof the header.
+
+Caddy setup with no domain yet (plain http, so `.env.docker` also needs
+`SESSION_COOKIE_INSECURE=true` until HTTPS is in place). The app moves to the
+loopback on port 3100, and Caddy serves it on port 80 and on the old port 3000,
+so existing `http://<server>:3000` links keep working:
+
+```bash
+apt install -y caddy
+printf ':80, :3000 {\n    reverse_proxy 127.0.0.1:3100\n}\n' > /etc/caddy/Caddyfile
+systemctl reload caddy
+# in .env.docker:
+#   FRONTEND_PORT=127.0.0.1:3100
+```
+
+With a domain, replace `:80, :3000` with the domain name. Caddy then obtains a
+certificate and serves HTTPS, and `SESSION_COOKIE_INSECURE` goes back to `false`.
+Each further app gets its own loopback port (3101, 3102, ...) and its own
+domain block in the same Caddyfile.
+
+## Automatic deploys (GitHub Actions)
+
+`.github/workflows/deploy.yml`:
+
+1. **check** (every pull request and push to `main`): `npm ci`, type check and
+   tests.
+2. **image** (`main` only, after check): builds the production image in
+   GitHub Actions and pushes it to
+   `ghcr.io/ryanrey08/ebudget-frontend:sha-<commit>`. Layers are cached, so
+   dependencies are reinstalled only when `package-lock.json` changes.
+   `NEXT_PUBLIC_*` values come from repository variables (Settings → Secrets
+   and variables → Actions → **Variables**); unset ones use the Dockerfile
+   defaults.
+3. **deploy**: connects over SSH and sends `deploy <commit>` plus a
+   short-lived, read-only registry token. Nothing else is sent.
+
+Nothing is built on the server: `next build` needs up to 2.5 GB of RAM, more
+than the server can spare next to the running apps. On the server, the
+Actions key is pinned to [`deploy.sh`](deploy.sh), installed as
+`/usr/local/sbin/ebudget-frontend-deploy`. The script:
+
+- pulls the image for that commit and checks out the same commit (compose files);
+- starts it and waits for the `/login` health check (`up --wait`);
+- if the new release is unhealthy, starts the previous commit and image again
+  and fails the job;
+- records every attempt in `/var/lib/ebudget-frontend/releases` and keeps the
+  images of the last five releases, so rollbacks work without GitHub.
+
+The container is capped at 384 MB (`FRONTEND_MEM_LIMIT` in `.env.docker`), so
+one busy app cannot starve the others on the server.
+
+### Rolling back
+
+GitHub: **Actions → Rollback → Run workflow**. Leave `target_sha` empty to go
+back one release (run it again to go back further), or give an earlier
+released commit, and enter a `reason`. Run it first with `confirm` empty: it
+only shows the live release and the target. Then run it again with `confirm`
+set to `ROLLBACK`. A rollback lasts until the next deploy from `main`.
+
+On the server, as root:
+
+```bash
+ebudget-frontend-deploy releases
+ebudget-frontend-deploy rollback
+```
+
+### One-time server setup
+
+As root, with the repo cloned to `/root/ebudget-frontend` and `.env.docker`
+in place:
+
+```bash
+# 1. Install the deploy script outside the checkout, so a rollback to an older
+#    commit cannot replace the script doing it. Repeat when deploy.sh changes.
+install -m 0755 /root/ebudget-frontend/docker/deploy.sh /usr/local/sbin/ebudget-frontend-deploy
+
+# 2. Pin the existing Actions key to it (no shell, no forwarding)
+cp -p ~/.ssh/authorized_keys ~/.ssh/authorized_keys.bak
+sed -i '/github-actions-deploy$/s|^ssh-|command="sh /usr/local/sbin/ebudget-frontend-deploy",restrict ssh-|' ~/.ssh/authorized_keys
+
+# 3. Print the value for the DEPLOY_KNOWN_HOSTS secret
+for f in /etc/ssh/ssh_host_*_key.pub; do
+  printf '%s %s\n' "<server ip>" "$(cut -d' ' -f1,2 "$f")"
+done
+```
+
+Repository secrets (Settings → Secrets and variables → Actions → **Repository
+secrets**; on a personal repository only the owner can add them):
+
+| Secret | Value |
+| --- | --- |
+| `SERVER_HOST` | The server's IP or host name. |
+| `SERVER_SSH_KEY` | The private half of the `github-actions-deploy` key, including the `BEGIN`/`END` lines. |
+| `DEPLOY_KNOWN_HOSTS` | The host key lines from step 3. They are read on the server itself, so a man-in-the-middle cannot substitute its own key. |
 
 ## Troubleshooting
 
@@ -252,7 +367,8 @@ session cookie is `Secure`, so the site must be served over HTTPS.
 | --- | --- |
 | `Bind for 0.0.0.0:3000 failed: port is already allocated` | Something (often a host `npm run dev`) uses 3000. Stop it or run with `FRONTEND_PORT=3001`. |
 | Sign-in fails with "Unable to reach the eBudget server" (503) | `BACKEND_API_URL` is not reachable from the container. Is the backend running (`curl http://localhost:8080` on the host)? Never use `localhost` in `BACKEND_API_URL`. |
-| Sign-in returns 403 "Cross-site requests are not allowed" | A reverse proxy rewrites `Host` without setting `X-Forwarded-Host`. Forward the original host. |
+| Sign-in or data requests return 403 "Cross-site requests are not allowed" | A reverse proxy rewrites `Host` without setting `X-Forwarded-Host`. Forward the original host. |
+| Real-mode data requests fail with 503 / 504 | The `/api/v1/*` data proxy cannot reach `BACKEND_API_URL` from the container (see the check above), or the backend took longer than `BACKEND_TIMEOUT_MS`. |
 | Changed a `NEXT_PUBLIC_*` value but the prod app still uses the old one | It is compiled in. Rebuild: `... -f docker-compose.prod.yml up -d --build`. |
 | Edits don't hot reload | Start with `WATCHPACK_POLLING=true`. Check `docker compose logs -f` for "Compiled". |
 | Pages are very slow in dev | First visit of each page compiles it (normal). If every load is slow, check the Mac for swapping (Activity Monitor → Memory) and stop unused Docker stacks, or use the production container. |
