@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { DATA_PROXY_BASE_URL, DEFAULT_API_BASE_URL, resolveApiConfig } from "@/config/api.config";
 
 describe("resolveApiConfig", () => {
-  it("defaults to mock mode and the default base URL", () => {
+  it("defaults to real mode (the backend) and the default base URL", () => {
     const config = resolveApiConfig({});
-    expect(config.mode).toBe("mock");
+    expect(config.mode).toBe("real");
     expect(config.baseUrl).toBe(DEFAULT_API_BASE_URL);
     expect(config.warnings).toEqual([]);
   });
@@ -35,9 +35,9 @@ describe("resolveApiConfig", () => {
     expect(resolveApiConfig({ mode: " REAL " }).mode).toBe("real");
   });
 
-  it("falls back to mock with a warning on an unknown mode", () => {
+  it("falls back to real with a warning on an unknown mode", () => {
     const config = resolveApiConfig({ mode: "staging" });
-    expect(config.mode).toBe("mock");
+    expect(config.mode).toBe("real");
     expect(config.warnings[0]).toMatch(/not supported/);
   });
 

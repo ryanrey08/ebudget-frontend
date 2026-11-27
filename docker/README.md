@@ -148,7 +148,7 @@ Defaults:
 | Variable | Default | Notes |
 | --- | --- | --- |
 | `FRONTEND_PORT` | `3000` | Host port. The container always listens on 3000. |
-| `NEXT_PUBLIC_API_MODE` | `mock` | `mock` serves eBudget data from the in-browser mock API; `real` sends it through the `/api/v1/*` data proxy to `BACKEND_API_URL`. |
+| `NEXT_PUBLIC_API_MODE` | `real` | `real` (default) sends eBudget data through the `/api/v1/*` data proxy to `BACKEND_API_URL`; `mock` (only when set) serves it from the in-browser mock API. |
 | `NEXT_PUBLIC_AUTH_MODE` | `real` | Sign-in through the auth proxy and the backend. `mock` = demo accounts. |
 | `BACKEND_API_URL` | `http://host.docker.internal:8080/api/v1` | Backend as seen **from inside the container**. |
 | `BACKEND_SYSTEM` | `ebudget` | `ebudget`, `engas` or `sims`. |

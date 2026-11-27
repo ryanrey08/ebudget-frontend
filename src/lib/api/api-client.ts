@@ -174,7 +174,7 @@ export function resolveRequestSettings(url: string, settings: ApiConfig): { mode
 }
 
 export const BACKEND_REQUIRED_MESSAGE =
-  "This page works with the eBudget backend only. Set NEXT_PUBLIC_API_MODE=real (see .env.example) and restart the app.";
+  "This page works with the eBudget backend only, and the app runs in mock mode. Remove NEXT_PUBLIC_API_MODE=mock (real is the default) and restart the app.";
 
 async function send(config: ApiRequestConfig): Promise<ApiTransportResult> {
   const resolved = resolveRequestSettings(config.url, getApiSettings());

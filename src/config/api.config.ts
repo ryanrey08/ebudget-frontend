@@ -5,7 +5,7 @@
  * reads its settings from here. Switching between the mock API and a real
  * backend only requires changing the environment variables below:
  *
- *   NEXT_PUBLIC_API_MODE=mock | real
+ *   NEXT_PUBLIC_API_MODE=mock | real   (default real; mock only when set)
  *
  * In real mode the browser only ever calls this app's own origin: data
  * requests go to the Next.js data proxy (/api/v1/*, src/app/api/v1) and
@@ -96,8 +96,9 @@ export function resolveApiConfig(raw: RawApiEnv): ApiConfig {
     mode = requested;
   } else {
     if (requested) warnings.push(`NEXT_PUBLIC_API_MODE="${raw.mode}" is not supported (use "mock" or "real"); falling back.`);
-    // Backwards compatibility with the earlier NEXT_PUBLIC_USE_MOCK_API flag.
-    mode = raw.legacyUseMock?.trim().toLowerCase() === "false" ? "real" : "mock";
+    // Real (the eBudget backend) unless mock is asked for: NEXT_PUBLIC_API_MODE=mock,
+    // or the earlier NEXT_PUBLIC_USE_MOCK_API=true flag.
+    mode = raw.legacyUseMock?.trim().toLowerCase() === "true" ? "mock" : "real";
   }
 
   let authMode: ApiMode = mode;

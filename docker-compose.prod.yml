@@ -10,7 +10,7 @@ services:
       # Browser-visible settings are compiled into the bundle: changing any of
       # them requires a rebuild. Never put secrets in NEXT_PUBLIC_* values.
       args:
-        NEXT_PUBLIC_API_MODE: ${NEXT_PUBLIC_API_MODE:-mock}
+        NEXT_PUBLIC_API_MODE: ${NEXT_PUBLIC_API_MODE:-real}
         NEXT_PUBLIC_AUTH_MODE: ${NEXT_PUBLIC_AUTH_MODE:-real}
         NEXT_PUBLIC_API_TIMEOUT_MS: ${NEXT_PUBLIC_API_TIMEOUT_MS:-30000}
         NEXT_PUBLIC_MOCK_API_DELAY_MS: ${NEXT_PUBLIC_MOCK_API_DELAY_MS:-150}

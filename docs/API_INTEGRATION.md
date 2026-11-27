@@ -14,7 +14,7 @@ endpoint, with status).
 ### Setup
 
 ```env
-NEXT_PUBLIC_API_MODE=real            # backend modules use the backend
+# NEXT_PUBLIC_API_MODE=real          # default since 2026-11-27; set "mock" only to run without a backend
 NEXT_PUBLIC_AUTH_MODE=real
 NEXT_PUBLIC_API_BASE_URL=/api/v1 # same-origin data proxy (default)
 NEXT_PUBLIC_API_DEMO_MODULES=true     # modules without endpoints keep demo data

@@ -14,7 +14,7 @@ services:
       # Browser-visible settings. In dev they are read when `next dev` starts,
       # so a restart (not a rebuild) picks up changes. They override the
       # host's .env.local, which is visible through the bind mount.
-      NEXT_PUBLIC_API_MODE: ${NEXT_PUBLIC_API_MODE:-mock}
+      NEXT_PUBLIC_API_MODE: ${NEXT_PUBLIC_API_MODE:-real}
       NEXT_PUBLIC_AUTH_MODE: ${NEXT_PUBLIC_AUTH_MODE:-real}
       NEXT_PUBLIC_API_TIMEOUT_MS: ${NEXT_PUBLIC_API_TIMEOUT_MS:-30000}
       NEXT_PUBLIC_MOCK_API_DELAY_MS: ${NEXT_PUBLIC_MOCK_API_DELAY_MS:-150}

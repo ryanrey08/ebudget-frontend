@@ -29,7 +29,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Public (browser-visible) build-time configuration. Never put secrets here.
-ARG NEXT_PUBLIC_API_MODE=mock
+ARG NEXT_PUBLIC_API_MODE=real
 ARG NEXT_PUBLIC_AUTH_MODE=real
 ARG NEXT_PUBLIC_API_TIMEOUT_MS=30000
 ARG NEXT_PUBLIC_MOCK_API_DELAY_MS=150

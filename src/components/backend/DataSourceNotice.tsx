@@ -30,8 +30,8 @@ export function BackendRequired({ children }: { children: React.ReactNode }) {
       </div>
       <p className="font-medium text-gray-900">This page needs the eBudget backend</p>
       <p className="mt-1 max-w-md text-sm text-gray-500">
-        It works with the backend&apos;s records only. Set <code className="rounded bg-gray-100 px-1">NEXT_PUBLIC_API_MODE=real</code> in
-        .env.local (see .env.example) and restart the app.
+        It works with the backend&apos;s records only, and this build runs in mock mode. Remove{" "}
+        <code className="rounded bg-gray-100 px-1">NEXT_PUBLIC_API_MODE=mock</code> (real is the default) and restart or rebuild the app.
       </p>
     </div>
   );

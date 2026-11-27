@@ -67,9 +67,9 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
           build-args: |
-            NEXT_PUBLIC_API_MODE=${{ vars.NEXT_PUBLIC_API_MODE || 'mock' }}
+            NEXT_PUBLIC_API_MODE=${{ vars.NEXT_PUBLIC_API_MODE || 'real' }}
             NEXT_PUBLIC_AUTH_MODE=${{ vars.NEXT_PUBLIC_AUTH_MODE || 'real' }}
-            NEXT_PUBLIC_API_BASE_URL=${{ vars.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api' }}
+            NEXT_PUBLIC_API_BASE_URL=${{ vars.NEXT_PUBLIC_API_BASE_URL || '/api/v1' }}
             NEXT_PUBLIC_API_TIMEOUT_MS=${{ vars.NEXT_PUBLIC_API_TIMEOUT_MS || '30000' }}
             NEXT_PUBLIC_API_WITH_CREDENTIALS=${{ vars.NEXT_PUBLIC_API_WITH_CREDENTIALS || 'true' }}
             NEXT_PUBLIC_MOCK_API_DELAY_MS=${{ vars.NEXT_PUBLIC_MOCK_API_DELAY_MS || '150' }}
