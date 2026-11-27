@@ -29,7 +29,13 @@ export interface ApiConfig {
    * endpoints do not exist in the backend yet.
    */
   authMode: ApiMode;
-  /** Backend base URL without a trailing slash, e.g. http://localhost:8000/api */
+  /**
+   * Data API base URL without a trailing slash. Defaults to the same-origin
+   * data proxy `/api/backend` (src/app/api/backend), which forwards to the
+   * backend's /api/v1/{system} routes with the httpOnly session token. An
+   * absolute URL calls a backend directly (it must then allow CORS and accept
+   * a bearer token set with setAuthToken).
+   */
   baseUrl: string;
   /** Request timeout for real requests, in milliseconds. */
   timeoutMs: number;
@@ -41,11 +47,20 @@ export interface ApiConfig {
   mockFailureRate: number;
   /** Persist the mock database in localStorage so changes survive a reload. */
   mockPersist: boolean;
+  /**
+   * Real mode: keep answering the modules that have no backend endpoints yet
+   * (dashboard, obligations, RAO registries, BFARS, reports, notifications,
+   * profile) from the demo data instead of failing with 404. Pages using it
+   * show a "demo data" notice. Default true (NEXT_PUBLIC_API_DEMO_MODULES).
+   */
+  demoModules: boolean;
   /** Problems found while reading the configuration (shown in dev only). */
   warnings: string[];
 }
 
-export const DEFAULT_API_BASE_URL = "http://localhost:8000/api";
+/** Same-origin data proxy (src/app/api/backend/[...path]). */
+export const BACKEND_PROXY_BASE_URL = "/api/backend";
+export const DEFAULT_API_BASE_URL = BACKEND_PROXY_BASE_URL;
 
 interface RawApiEnv {
   mode?: string;
@@ -57,6 +72,7 @@ interface RawApiEnv {
   mockDelayMs?: string;
   mockFailureRate?: string;
   mockPersist?: string;
+  demoModules?: string;
 }
 
 function toNumber(value: string | undefined, fallback: number, min: number, max: number) {
@@ -89,8 +105,7 @@ export function resolveApiConfig(raw: RawApiEnv): ApiConfig {
 
   let baseUrl = (raw.baseUrl ?? "").trim().replace(/\/+$/, "");
   if (!baseUrl) {
-    baseUrl = DEFAULT_API_BASE_URL;
-    if (mode === "real") warnings.push(`NEXT_PUBLIC_API_BASE_URL is not set; using ${DEFAULT_API_BASE_URL}.`);
+    baseUrl = DEFAULT_API_BASE_URL; // the same-origin data proxy
   } else if (!/^https?:\/\//i.test(baseUrl) && !baseUrl.startsWith("/")) {
     warnings.push(`NEXT_PUBLIC_API_BASE_URL="${raw.baseUrl}" must be an absolute http(s) URL or a path starting with "/"; using ${DEFAULT_API_BASE_URL}.`);
     baseUrl = DEFAULT_API_BASE_URL;
@@ -105,6 +120,7 @@ export function resolveApiConfig(raw: RawApiEnv): ApiConfig {
     mockDelayMs: toNumber(raw.mockDelayMs, 150, 0, 10_000),
     mockFailureRate: toNumber(raw.mockFailureRate, 0, 0, 1),
     mockPersist: raw.mockPersist?.trim().toLowerCase() === "true",
+    demoModules: raw.demoModules?.trim().toLowerCase() !== "false",
     warnings,
   };
 }
@@ -120,11 +136,36 @@ export const apiConfig: Readonly<ApiConfig> = Object.freeze(
     mockDelayMs: process.env.NEXT_PUBLIC_MOCK_API_DELAY_MS,
     mockFailureRate: process.env.NEXT_PUBLIC_MOCK_API_FAILURE_RATE,
     mockPersist: process.env.NEXT_PUBLIC_MOCK_API_PERSIST,
+    demoModules: process.env.NEXT_PUBLIC_API_DEMO_MODULES,
   }),
 );
 
 export const isMockApi = () => apiConfig.mode === "mock";
 export const isMockAuth = () => apiConfig.authMode === "mock";
+/** Whether the eBudget backend's data endpoints are in use (NEXT_PUBLIC_API_MODE=real). */
+export const isBackendData = () => apiConfig.mode === "real";
+
+/**
+ * Paths of the modules the backend has no endpoints for yet. In real mode
+ * they are answered by the demo (mock) API when `demoModules` is on. Keep this
+ * list in sync with docs/FRONTEND_API_INTEGRATION_AUDIT.md.
+ */
+export const DEMO_ONLY_PATHS: readonly RegExp[] = [
+  /^\/dashboard(\/|$)/,
+  /^\/obligations(\/|$)/,
+  /^\/allotment-classes\//, // RAO registries (the backend's classes live under /master-data)
+  /^\/allotments\/registry(\/|$)/,
+  /^\/allotments\/[^/]+\/registry$/,
+  /^\/bfars(\/|$)/,
+  /^\/reports(\/(history|generate)(\/|$)|$)/,
+  /^\/notifications(\/|$)/,
+  /^\/profile(\/|$)/,
+];
+
+export const isDemoOnlyPath = (url: string) => {
+  const path = `/${url.replace(/^https?:\/\/[^/]+/i, "").replace(/^\/+/, "")}`.split("?")[0];
+  return DEMO_ONLY_PATHS.some((re) => re.test(path));
+};
 
 /**
  * Same-origin base path of the Next.js auth proxy (src/app/api/auth/*). The

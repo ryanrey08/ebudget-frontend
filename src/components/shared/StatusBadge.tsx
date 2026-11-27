@@ -25,6 +25,17 @@ const STATUS_TONES: Record<string, BadgeTone> = {
   Draft: "gray",
   Cancelled: "red",
   "With Errors": "red",
+  // eBudget backend status labels
+  "Pending Approval": "amber",
+  "Fully Released": "green",
+  Active: "blue",
+  Inactive: "gray",
+  Rejected: "red",
+  Open: "green",
+  Closed: "amber",
+  Locked: "gray",
+  Queued: "gray",
+  Completed: "green",
 };
 
 export function StatusBadge({ status }: { status: string }) {

@@ -22,13 +22,21 @@ const isObject = (v: unknown): v is Json => typeof v === "object" && v !== null 
 
 const WRAPPER_KEYS = new Set(["data", "meta", "links", "message", "success", "status"]);
 
+/** Laravel's own pagination keys; anything else in `meta` is kept in `Paginated.meta`. */
+const PAGINATION_KEYS = new Set([
+  "current_page", "page", "per_page", "pageSize", "total", "last_page", "from", "to", "path", "links", "data",
+  "first_page_url", "last_page_url", "next_page_url", "prev_page_url",
+]);
+
 function toPaginated(items: unknown[], meta: Json): Paginated<unknown> {
   const num = (v: unknown, fallback: number) => (typeof v === "number" && Number.isFinite(v) ? v : Number(v) || fallback);
+  const extra = Object.fromEntries(Object.entries(meta).filter(([k]) => !PAGINATION_KEYS.has(k)));
   return {
     items,
     total: num(meta.total, items.length),
     page: num(meta.current_page ?? meta.page, 1),
     pageSize: num(meta.per_page ?? meta.pageSize, items.length || 10),
+    ...(Object.keys(extra).length ? { meta: extra } : {}),
   };
 }
 

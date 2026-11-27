@@ -113,9 +113,12 @@ export function ProfileView() {
             {env.useMockAuth ? (
               <MockProfileEditor />
             ) : (
-              <FormAlert tone="info">
-                Profile details and passwords are managed by your eBudget administrator.
-              </FormAlert>
+              <>
+                <FormAlert tone="info">
+                  Your name and email are managed by your eBudget administrator (the backend has no profile endpoint).
+                </FormAlert>
+                <ChangePasswordForm />
+              </>
             )}
           </div>
         </div>

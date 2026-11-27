@@ -4,8 +4,8 @@ import { GAA_STEPS, type GaaStep } from "../../state/gaaWizardSlice";
 
 const STEP_META: Record<GaaStep, { title: string; hint: string }> = {
   upload: { title: "Upload File", hint: "Select GAA file" },
-  validate: { title: "Validate Data", hint: "Check for errors" },
-  map: { title: "Map & Configure", hint: "Confirm mapping" },
+  validate: { title: "Validate Data", hint: "Check and correct rows" },
+  map: { title: "Configure Import", hint: "Level and legal reference" },
   import: { title: "Import to System", hint: "Create Appropriations" },
 };
 
@@ -67,11 +67,11 @@ export const GAA_STEP_TITLES: Record<GaaStep, { title: string; description: stri
   },
   validate: {
     title: "Validate Data",
-    description: "Check the uploaded GAA data for errors, inconsistencies and duplicates before importing.",
+    description: "The backend checked every row against the master data. Correct the cells with errors before importing.",
   },
   map: {
-    title: "Map & Configure",
-    description: "Map the columns from the GAA file to the eBudget fields and configure import settings.",
+    title: "Configure Import",
+    description: "Settings the template doesn't carry. They apply to every imported line.",
   },
   import: { title: "Import to System", description: "Validate and import your GAA data to eBudget." },
 };

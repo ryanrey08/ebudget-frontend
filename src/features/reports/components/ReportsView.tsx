@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Download, ExternalLink, FileChartColumn, FileText, History } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { DemoDataNotice } from "@/components/backend/DataSourceNotice";
+import { ReportSharingCard } from "@/features/access/components/ReportSharingCard";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader } from "@/components/ui/Card";
@@ -79,6 +81,7 @@ export function ReportsView() {
   return (
     <>
       <PageHeader title="Reports" description="Browse, generate and open eBudget reports." />
+      <DemoDataNotice module="report catalog or report history" />
 
       <Card className="mb-5 overflow-hidden">
         <div className="flex flex-col gap-3 px-5 pt-4 lg:flex-row lg:items-center lg:justify-between">
@@ -155,6 +158,7 @@ export function ReportsView() {
       </Card>
 
       <GenerateReportModal report={generating} onClose={() => setGenerating(null)} />
+      <ReportSharingCard />
     </>
   );
 }

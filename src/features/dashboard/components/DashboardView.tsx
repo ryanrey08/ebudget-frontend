@@ -1,6 +1,7 @@
 "use client";
 
 import { PageHeader } from "@/components/layout/PageHeader";
+import { DemoDataNotice } from "@/components/backend/DataSourceNotice";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { Card } from "@/components/ui/Card";
 import { siteConfig } from "@/config/site";
@@ -22,6 +23,7 @@ export function DashboardView() {
   return (
     <>
       <PageHeader title="Dashboard" description={siteConfig.tagline} />
+      <DemoDataNotice module="dashboard" />
       {error && !loading ? (
         <Card>
           <ErrorState error={error} onRetry={refetch} />

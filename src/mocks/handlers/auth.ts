@@ -8,6 +8,7 @@ import type {
   ResetPasswordRequest,
   User,
 } from "@/features/auth/types";
+import { PERMISSIONS } from "@/features/auth/types";
 import {
   STAFF_ROLE_LABELS,
   type ChangePasswordRequest,
@@ -30,7 +31,9 @@ function toAuthUser(staff: StaffProfile): User {
     last_login_at: staff.lastLoginAt ?? null,
     created_at: staff.createdAt,
     is_super_admin: false,
-    permissions: [],
+    // Demo accounts can open every page (the backend-only ones then explain
+    // that they need NEXT_PUBLIC_API_MODE=real).
+    permissions: [...PERMISSIONS],
   };
 }
 

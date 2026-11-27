@@ -4,6 +4,11 @@ export interface Paginated<T> {
   total: number;
   page: number;
   pageSize: number;
+  /**
+   * Extra list metadata sent by the backend next to the pagination fields,
+   * e.g. `total_amount` (appropriations, allotments). Absent when none.
+   */
+  meta?: Record<string, unknown>;
 }
 
 export interface PageParams {
@@ -32,6 +37,11 @@ export interface ApiError {
   code?: ApiErrorCode;
   message: string;
   fieldErrors?: Record<string, string>;
+  /**
+   * The backend's stable problem `code` (e.g. `fiscal_year_not_open`,
+   * `allotment_release_open`, `insufficient_privileges`), when it sent one.
+   */
+  problemCode?: string;
 }
 
 export interface MessageResponse {

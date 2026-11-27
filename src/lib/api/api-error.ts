@@ -50,17 +50,25 @@ export class ApiRequestError extends Error implements ApiError {
   readonly status: ApiError["status"];
   readonly code: ApiErrorCode;
   readonly fieldErrors?: Record<string, string>;
+  readonly problemCode?: string;
 
-  constructor(status: ApiError["status"], message?: string, fieldErrors?: Record<string, string>) {
+  constructor(status: ApiError["status"], message?: string, fieldErrors?: Record<string, string>, problemCode?: string) {
     super(message || defaultMessage(status));
     this.name = "ApiRequestError";
     this.status = status;
     this.code = codeForStatus(status);
     this.fieldErrors = fieldErrors && Object.keys(fieldErrors).length ? fieldErrors : undefined;
+    this.problemCode = problemCode || undefined;
   }
 
   toJSON(): ApiError {
-    return { status: this.status, code: this.code, message: this.message, ...(this.fieldErrors ? { fieldErrors: this.fieldErrors } : {}) };
+    return {
+      status: this.status,
+      code: this.code,
+      message: this.message,
+      ...(this.fieldErrors ? { fieldErrors: this.fieldErrors } : {}),
+      ...(this.problemCode ? { problemCode: this.problemCode } : {}),
+    };
   }
 }
 
@@ -92,6 +100,7 @@ export function errorFromResponse(status: number, body: unknown): ApiRequestErro
     message?: unknown;
     error?: unknown;
     errors?: unknown;
+    code?: unknown;
   };
   let message =
     typeof data.detail === "string" ? data.detail
@@ -100,7 +109,8 @@ export function errorFromResponse(status: number, body: unknown): ApiRequestErro
     : "";
   // Hide server internals on 5xx responses; they are not meaningful to users.
   if (status >= 500 || message.length > 300) message = "";
-  return new ApiRequestError(status, message || undefined, flattenFieldErrors(data.errors));
+  const problemCode = typeof data.code === "string" && /^[a-z0-9_]{1,64}$/.test(data.code) ? data.code : undefined;
+  return new ApiRequestError(status, message || undefined, flattenFieldErrors(data.errors), problemCode);
 }
 
 /** Converts anything thrown during a request into a serialisable ApiError. */

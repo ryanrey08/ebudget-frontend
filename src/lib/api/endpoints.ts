@@ -3,6 +3,79 @@
  * The mock API registers handlers for exactly these paths, so swapping to the
  * real backend only requires the backend to implement the same contract.
  */
+/**
+ * Routes of the eBudget backend (backend-api `main`, routes/api.php and
+ * routes/ebudget.php), relative to /api/v1/ebudget. In real mode they reach
+ * the backend through the data proxy (/api/backend/*). They have no mock
+ * handlers: services call them with `requiresBackend`.
+ */
+export const BACKEND = {
+  fiscalYears: "/master-data/fiscal-years",
+  fiscalYear: (id: string) => `/master-data/fiscal-years/${id}`,
+  fiscalYearTransition: (id: string, action: "close" | "reopen" | "lock") => `/master-data/fiscal-years/${id}/${action}`,
+  prexcItems: "/master-data/prexc-items",
+  prexcItem: (id: number) => `/master-data/prexc-items/${id}`,
+  fundSources: "/master-data/fund-sources",
+  fundSource: (id: number) => `/master-data/fund-sources/${id}`,
+  organizations: "/master-data/organizations",
+  organization: (id: number) => `/master-data/organizations/${id}`,
+  allotmentClasses: "/master-data/allotment-classes",
+  allotmentClass: (id: number) => `/master-data/allotment-classes/${id}`,
+  uacsObjects: "/master-data/uacs-objects",
+  uacsObject: (id: number) => `/master-data/uacs-objects/${id}`,
+
+  appropriations: "/appropriations",
+  appropriation: (id: number) => `/appropriations/${id}`,
+  gaaValidate: "/appropriations/import/validate",
+  gaaImports: "/appropriations/imports",
+  gaaImport: (id: string) => `/appropriations/imports/${id}`,
+
+  allotments: "/allotments",
+  allotment: (id: string) => `/allotments/${id}`,
+  allotmentCancel: (id: string) => `/allotments/${id}/cancel`,
+  allotmentReleases: (id: string) => `/allotments/${id}/releases`,
+  allotmentRelease: (id: string, releaseId: string) => `/allotments/${id}/releases/${releaseId}`,
+  allotmentReleaseSubmit: (id: string, releaseId: string) => `/allotments/${id}/releases/${releaseId}/submit`,
+  allotmentReleaseCancel: (id: string, releaseId: string) => `/allotments/${id}/releases/${releaseId}/cancel`,
+  allotmentAttachments: (id: string) => `/allotments/${id}/attachments`,
+  allotmentAttachment: (id: string, attachmentId: string) => `/allotments/${id}/attachments/${attachmentId}`,
+
+  approvalRequest: (id: string) => `/approval-requests/${id}`,
+  approvalStepApprove: (id: string, stepId: string) => `/approval-requests/${id}/steps/${stepId}/approve`,
+  approvalStepReject: (id: string, stepId: string) => `/approval-requests/${id}/steps/${stepId}/reject`,
+  approvalStepSignature: (id: string, stepId: string) => `/approval-requests/${id}/steps/${stepId}/signature`,
+
+  agencyProfile: "/system-administration/agency-profile",
+  agencyLogo: "/system-administration/agency-profile/logo",
+  approvalWorkflows: "/system-administration/approval-workflows",
+  approvalWorkflow: (id: string) => `/system-administration/approval-workflows/${id}`,
+  signatories: "/system-administration/signatories",
+  signatory: (id: string) => `/system-administration/signatories/${id}`,
+
+  permissions: "/permissions",
+  roles: "/roles",
+  role: (id: string) => `/roles/${id}`,
+  users: "/users",
+  user: (id: string) => `/users/${id}`,
+  userRoles: (id: string) => `/users/${id}/roles`,
+  userDeactivate: (id: string) => `/users/${id}/deactivate`,
+  userActivate: (id: string) => `/users/${id}/activate`,
+
+  reportDatasets: "/reports/datasets",
+  reportShares: "/reports/shares",
+  reportShare: (id: number) => `/reports/shares/${id}`,
+} as const;
+
+/**
+ * Turns an absolute URL the backend put in a response (download_url,
+ * logo_url, signature_url) into a path for the API client, so the file is
+ * fetched through the data proxy with the session token.
+ */
+export function backendPath(url: string): string {
+  const match = /\/api\/v1\/[a-z]+(\/.*)$/.exec(url);
+  return match ? match[1] : url;
+}
+
 export const ENDPOINTS = {
   /**
    * In real auth mode these are served by the Next.js auth proxy
@@ -15,6 +88,8 @@ export const ENDPOINTS = {
     logout: "/auth/logout",
     register: "/auth/register",
     me: "/auth/me",
+    /** PUT: change the caller's own password (backend; auth proxy src/app/api/auth/password). */
+    password: "/auth/password",
     forgotPassword: "/auth/forgot-password",
     resetPassword: "/auth/reset-password",
   },

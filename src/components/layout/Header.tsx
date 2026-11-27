@@ -5,7 +5,11 @@ import { Building2, Menu } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { openMobileSidebar, selectSidebarCollapsed, toggleSidebarCollapsed } from "@/store/slices/uiSlice";
 import { agencyChanged, fiscalYearChanged, selectAgencyId, selectFiscalYear } from "@/store/slices/filtersSlice";
-import { AGENCIES, FISCAL_YEARS, type AgencyId, type FiscalYear } from "@/config/site";
+import { AGENCIES, FISCAL_YEARS, type AgencyId } from "@/config/site";
+import { isBackendData } from "@/config/api.config";
+import { useGetFiscalYearsQuery } from "@/features/master-data/services/masterDataApi";
+import { ALL_FISCAL_YEARS } from "@/hooks/useBackendFiscalYear";
+import { useCan } from "@/hooks/useCan";
 import { ROUTES } from "@/lib/constants/routes";
 import { Select } from "@/components/ui/Select";
 import { LogoLockup } from "@/components/shared/Logo";
@@ -18,6 +22,10 @@ export function Header() {
   const collapsed = useAppSelector(selectSidebarCollapsed);
   const fiscalYear = useAppSelector(selectFiscalYear);
   const agencyId = useAppSelector(selectAgencyId);
+  // Real mode: offer the backend's fiscal years too (the demo modules have data for FISCAL_YEARS).
+  const canSeeYears = useCan("fiscal_years.view");
+  const backendYears = useGetFiscalYearsQuery(ALL_FISCAL_YEARS, { skip: !isBackendData() || !canSeeYears });
+  const years = [...new Set<number>([...(backendYears.data?.items.map((fy) => fy.year) ?? []), ...FISCAL_YEARS, fiscalYear])].sort((a, b) => b - a);
 
   return (
     <header className="fixed inset-x-0 top-0 z-40 flex h-[72px] items-center border-b border-gray-200 bg-white">
@@ -63,8 +71,8 @@ export function Header() {
           <Select
             id="fiscal-year"
             value={String(fiscalYear)}
-            onChange={(e) => dispatch(fiscalYearChanged(Number(e.target.value) as FiscalYear))}
-            options={FISCAL_YEARS.map((fy) => ({ value: String(fy), label: `FY ${fy}` }))}
+            onChange={(e) => dispatch(fiscalYearChanged(Number(e.target.value)))}
+            options={years.map((fy) => ({ value: String(fy), label: `FY ${fy}` }))}
             className="w-24 sm:w-28"
           />
           <div className="hidden items-center gap-2 xl:flex">

@@ -9,6 +9,9 @@ import { dashboardApi } from "@/features/dashboard/services/dashboardApi";
 import { obligationsApi } from "@/features/obligation-management/services/obligationsApi";
 import { appropriationsApi } from "@/features/appropriations/services/appropriationsApi";
 import { allotmentsApi } from "@/features/allotments/services/allotmentsApi";
+import { masterDataApi } from "@/features/master-data/services/masterDataApi";
+import { ALL_FISCAL_YEARS } from "@/hooks/useBackendFiscalYear";
+import { isBackendData } from "@/config/api.config";
 import { allotmentClassesApi } from "@/features/allotment-classes/services/allotmentClassesApi";
 import { reportsApi } from "@/features/reports/services/reportsApi";
 
@@ -46,26 +49,11 @@ export function useRoutePrefetch() {
           dispatch(appropriationsApi.util.prefetch("getAppropriationLookups", undefined, opts));
           return;
         case ROUTES.appropriations:
-          dispatch(
-            appropriationsApi.util.prefetch(
-              "getAppropriations",
-              { fiscalYear, fundSource: "", program: "", allotmentClass: "", category: "", search: "", page: 1, pageSize: 10 },
-              opts,
-            ),
-          );
-          dispatch(appropriationsApi.util.prefetch("getAppropriationSummary", fy, opts));
-          dispatch(appropriationsApi.util.prefetch("getAppropriationLookups", undefined, opts));
-          return;
         case ROUTES.allotments:
-          dispatch(
-            allotmentsApi.util.prefetch(
-              "getAllotments",
-              { fiscalYear, fundSource: "", program: "", allotmentClass: "", group: "", search: "", page: 1, pageSize: 10 },
-              opts,
-            ),
-          );
-          dispatch(allotmentsApi.util.prefetch("getAllotmentSummary", fy, opts));
-          dispatch(appropriationsApi.util.prefetch("getAppropriationLookups", undefined, opts));
+        case ROUTES.newAllotment:
+        case ROUTES.newAppropriation:
+          // Backend pages first resolve the header's year to its fiscal-year record.
+          if (isBackendData()) dispatch(masterDataApi.util.prefetch("getFiscalYears", ALL_FISCAL_YEARS, opts));
           return;
         case ROUTES.reports:
           dispatch(reportsApi.util.prefetch("getReports", { category: "", search: "" }, opts));

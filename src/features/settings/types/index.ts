@@ -34,4 +34,6 @@ export type UpdateProfileRequest = Pick<StaffProfile, "firstName" | "lastName" |
 export interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;
+  /** Sent to the backend as `password_confirmation`. */
+  confirmPassword: string;
 }

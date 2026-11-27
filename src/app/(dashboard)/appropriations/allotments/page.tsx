@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { AllotmentsView } from "@/features/allotments/components/AllotmentsView";
+import { AllotmentRecordsView } from "@/features/allotments/components/records/AllotmentRecordsView";
 
 export const metadata: Metadata = { title: "Allotments" };
 
 export default function Page() {
-  return <AllotmentsView />;
+  return <AllotmentRecordsView />;
 }

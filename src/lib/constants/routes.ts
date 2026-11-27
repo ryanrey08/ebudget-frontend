@@ -7,6 +7,7 @@ export const ROUTES = {
   gaaUpload: "/appropriations/gaa-upload",
   appropriations: "/appropriations/appropriations",
   newAppropriation: "/appropriations/appropriations/new",
+  editAppropriation: (id: number) => `/appropriations/appropriations/${id}/edit`,
   allotments: "/appropriations/allotments",
   newAllotment: "/appropriations/allotments/new",
   allotment: (id: string) => `/appropriations/allotments/${id}`,
@@ -21,6 +22,18 @@ export const ROUTES = {
   bfars: (id: string) => `/bfars-reporting/${id}`,
   reports: "/reports",
   profile: "/settings/profile",
+  approvalRequest: (id: string) => `/approvals/${id}`,
+  fiscalYears: "/master-data/fiscal-years",
+  prexcItems: "/master-data/prexc-items",
+  fundSources: "/master-data/fund-sources",
+  organizations: "/master-data/organizations",
+  backendAllotmentClasses: "/master-data/allotment-classes",
+  uacsObjects: "/master-data/uacs-objects",
+  users: "/administration/users",
+  roles: "/administration/roles",
+  signatories: "/administration/signatories",
+  approvalWorkflows: "/administration/approval-workflows",
+  agencyProfile: "/administration/agency-profile",
 } as const;
 
 export const AUTH_ROUTES = [ROUTES.login, ROUTES.register, ROUTES.forgotPassword, ROUTES.resetPassword];
@@ -33,4 +46,7 @@ export const PROTECTED_ROUTE_PREFIXES = [
   "/bfars-reporting",
   "/reports",
   "/settings",
+  "/master-data",
+  "/administration",
+  "/approvals",
 ];

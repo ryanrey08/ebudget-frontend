@@ -1,4 +1,4 @@
-import { apiConfig, AUTH_PROXY_BASE_URL, type ApiConfig } from "@/config/api.config";
+import { apiConfig, AUTH_PROXY_BASE_URL, isDemoOnlyPath, type ApiConfig } from "@/config/api.config";
 import { ApiRequestError, errorFromResponse } from "./api-error";
 import { normalizeResponse } from "./api-response";
 import type { ApiRequestConfig, DownloadedFile, HttpMethod, QueryParams, QueryValue } from "./api-types";
@@ -13,7 +13,9 @@ import { clearAuthToken, emitAuthEvent, getAuthToken } from "./auth-token";
  * - mode "real": the request is sent with fetch to `apiConfig.baseUrl`.
  *
  * In real mode a failed request is reported as an error. It never falls back
- * to mock data.
+ * to mock data. Only the modules the backend has no endpoints for at all
+ * (`DEMO_ONLY_PATHS` in api.config.ts) are answered by the demo data, and
+ * only while `demoModules` is on.
  *
  * Authentication requests (`/auth/*`) follow `authMode` instead of `mode`. In
  * real auth mode they go to the same-origin Next.js auth proxy
@@ -157,14 +159,25 @@ export const isAuthPath = (url: string) => /^\/?auth\//.test(url);
 
 /** Mode and settings that apply to one request (auth requests use authMode). */
 export function resolveRequestSettings(url: string, settings: ApiConfig): { mode: ApiConfig["mode"]; settings: ApiConfig } {
-  if (!isAuthPath(url)) return { mode: settings.mode, settings };
+  if (!isAuthPath(url)) {
+    if (settings.mode === "real" && settings.demoModules && isDemoOnlyPath(url)) return { mode: "mock", settings };
+    return { mode: settings.mode, settings };
+  }
   if (settings.authMode === "mock") return { mode: "mock", settings };
   // Same-origin proxy: the httpOnly session cookie is sent automatically.
   return { mode: "real", settings: { ...settings, baseUrl: AUTH_PROXY_BASE_URL, withCredentials: false } };
 }
 
+export const BACKEND_REQUIRED_MESSAGE =
+  "This page works with the eBudget backend only. Set NEXT_PUBLIC_API_MODE=real (see .env.example) and restart the app.";
+
 async function send(config: ApiRequestConfig): Promise<ApiTransportResult> {
-  const { mode, settings } = resolveRequestSettings(config.url, getApiSettings());
+  const resolved = resolveRequestSettings(config.url, getApiSettings());
+  const { settings } = resolved;
+  const mode = config.demo && settings.demoModules ? "mock" : resolved.mode;
+  if (mode === "mock" && config.requiresBackend && !transportOverride) {
+    throw new ApiRequestError("CUSTOM_ERROR", BACKEND_REQUIRED_MESSAGE, undefined, "backend_required");
+  }
   const transport = transportOverride ?? (mode === "mock" ? mockTransport : fetchTransport);
   const result = await transport(config, settings);
 

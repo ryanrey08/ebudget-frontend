@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { NewAppropriationView } from "@/features/appropriations/components/new-appropriation/NewAppropriationView";
+import { AppropriationLineFormView } from "@/features/appropriations/components/lines/AppropriationLineForm";
 
 export const metadata: Metadata = { title: "New Appropriation" };
 
 export default function Page() {
-  return <NewAppropriationView />;
+  return <AppropriationLineFormView />;
 }

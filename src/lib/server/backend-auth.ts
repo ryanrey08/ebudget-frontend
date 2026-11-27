@@ -110,7 +110,7 @@ export class BackendUnavailable extends Error {
 export async function callBackend(
   request: NextRequest,
   path: string,
-  init: { method: "GET" | "POST"; token?: string | null; body?: unknown },
+  init: { method: "GET" | "POST" | "PUT"; token?: string | null; body?: unknown },
 ): Promise<BackendResult> {
   const settings = backendSettings();
   const headers = new Headers({ Accept: "application/json" });
@@ -191,4 +191,10 @@ export function setSessionCookie(response: NextResponse, token: string, expiresA
 
 export function clearSessionCookie(response: NextResponse) {
   response.cookies.set({ name: SESSION_COOKIE, value: "", httpOnly: true, secure: secureCookies(), sameSite: "lax", path: "/", maxAge: 0 });
+}
+
+/** http://backend/api/v1/ebudget/appropriations/5 → /api/backend/appropriations/5 (used by the data proxy). */
+export function toProxyLocation(location: string, system: string): string {
+  const match = new RegExp(`/api/v1/${system}/(.*)$`).exec(location);
+  return match ? `/api/backend/${match[1]}` : location;
 }

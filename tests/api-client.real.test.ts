@@ -13,7 +13,7 @@ describe("api client in real mode", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    setApiSettings({ mode: "real", baseUrl: BASE, timeoutMs: 1000 });
+    setApiSettings({ mode: "real", baseUrl: BASE, timeoutMs: 1000, demoModules: false });
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
   });
@@ -117,7 +117,7 @@ describe("api client in real mode", () => {
   });
 
   it("times out slow requests", async () => {
-    setApiSettings({ mode: "real", baseUrl: BASE, timeoutMs: 1000 });
+    setApiSettings({ mode: "real", baseUrl: BASE, timeoutMs: 1000, demoModules: false });
     fetchMock.mockImplementation((_url: string, init: RequestInit) =>
       new Promise((_resolve, reject) => init.signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")))),
     );

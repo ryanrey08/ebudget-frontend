@@ -44,7 +44,10 @@ export function Sidebar() {
   const { logout, isLoggingOut } = useLogout();
   const prefetch = useRoutePrefetch();
   const user = useAppSelector(selectCurrentUser);
-  const items = NAVIGATION.filter((item) => !item.permission || hasPermission(user, item.permission));
+  // UI only: the backend still authorises every request.
+  const items = NAVIGATION.filter((item) => !item.permission || hasPermission(user, item.permission))
+    .map((item) => (item.children ? { ...item, children: item.children.filter((c) => !c.permission || hasPermission(user, c.permission)) } : item))
+    .filter((item) => !item.children || item.children.length > 0);
 
   // Groups open by default when they contain the active route.
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() =>

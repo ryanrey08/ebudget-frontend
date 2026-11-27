@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { AppropriationsView } from "@/features/appropriations/components/appropriations/AppropriationsView";
+import { AppropriationLinesView } from "@/features/appropriations/components/lines/AppropriationLinesView";
 
 export const metadata: Metadata = { title: "Appropriations" };
 
 export default function Page() {
-  return <AppropriationsView />;
+  return <AppropriationLinesView />;
 }

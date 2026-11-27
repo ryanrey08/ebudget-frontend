@@ -27,6 +27,19 @@ export interface ApiRequestConfig {
   skipAuth?: boolean;
   /** Return the response body as-is instead of unwrapping the envelope. */
   rawResponse?: boolean;
+  /**
+   * The endpoint exists only in the eBudget backend (no mock handler). In
+   * mock mode the request fails with problem code `backend_required`
+   * instead of reaching an unrelated mock handler.
+   */
+  requiresBackend?: boolean;
+  /**
+   * A demo-contract call whose path collides with a backend path (the old
+   * /appropriations, /allotments and /gaa demo endpoints still used by the
+   * demo obligation and RAO registry pages). Answered by the demo API in real
+   * mode while `demoModules` is on.
+   */
+  demo?: boolean;
 }
 
 /**

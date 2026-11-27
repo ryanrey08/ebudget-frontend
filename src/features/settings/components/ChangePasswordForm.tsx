@@ -8,6 +8,7 @@ import { FormField } from "@/components/forms/FormField";
 import { PasswordInput } from "@/components/forms/PasswordInput";
 import { applyServerErrors } from "@/components/forms/applyServerErrors";
 import { FormAlert } from "@/components/forms/FormAlert";
+import { isMockAuth } from "@/config/api.config";
 import { useNotify } from "@/hooks/useNotify";
 import { getErrorMessage, isApiError } from "@/lib/api/error-handler";
 import { useChangePasswordMutation } from "../services/profileApi";
@@ -26,11 +27,11 @@ export function ChangePasswordForm() {
     formState: { errors },
   } = useForm<ChangePasswordValues>({ resolver: zodResolver(changePasswordSchema), defaultValues: empty });
 
-  const onSubmit = async ({ currentPassword, newPassword }: ChangePasswordValues) => {
+  const onSubmit = async ({ currentPassword, newPassword, confirmPassword }: ChangePasswordValues) => {
     try {
-      await changePassword({ currentPassword, newPassword }).unwrap();
+      const res = await changePassword({ currentPassword, newPassword, confirmPassword }).unwrap();
       reset(empty);
-      notify("success", "Password changed", "Use your new password the next time you sign in.");
+      notify("success", "Password changed", res?.message ?? "Use your new password the next time you sign in.");
     } catch (err) {
       applyServerErrors(err, setError);
     }
@@ -40,7 +41,14 @@ export function ChangePasswordForm() {
 
   return (
     <Card>
-      <CardHeader title="Change Password" description="Use at least 8 characters with mixed case and a number." />
+      <CardHeader
+        title="Change Password"
+        description={
+          isMockAuth()
+            ? "Use at least 8 characters with mixed case and a number."
+            : "Use at least 12 characters with upper and lower case, a number and a symbol. Your other sessions are signed out."
+        }
+      />
       <CardBody>
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           {showGeneralError && <FormAlert>{getErrorMessage(error)}</FormAlert>}

@@ -1,6 +1,8 @@
 import {
   ChartColumnBig,
   ClipboardList,
+  Database,
+  ShieldCheck,
   FilePlus2,
   FileText,
   House,
@@ -15,8 +17,8 @@ import { BFARS_REPORTS } from "@/lib/constants/bfars";
 import type { Permission } from "@/features/auth/types";
 
 export type NavLeaf =
-  | { label: string; href: string; icon?: LucideIcon }
-  | { label: string; action: "logout"; icon?: LucideIcon };
+  | { label: string; href: string; icon?: LucideIcon; permission?: Permission }
+  | { label: string; action: "logout"; icon?: LucideIcon; permission?: Permission };
 
 export interface NavItem {
   id: string;
@@ -29,9 +31,8 @@ export interface NavItem {
   matchPrefix?: string;
   /**
    * Backend permission needed to see the item (GET /auth/me `permissions`).
-   * UI only: the backend authorises every request itself. No current item
-   * needs one, because the backend's catalog (users.*, roles.*, reports.*)
-   * has no eBudget pages yet.
+   * UI only: the backend authorises every request itself. Children can carry
+   * their own permission; a group whose children are all hidden is hidden.
    */
   permission?: Permission;
 }
@@ -44,9 +45,9 @@ export const NAVIGATION: NavItem[] = [
     icon: FilePlus2,
     matchPrefix: "/appropriations",
     children: [
-      { label: "GAA Upload", href: ROUTES.gaaUpload },
-      { label: "Appropriations", href: ROUTES.appropriations },
-      { label: "Allotments", href: ROUTES.allotments },
+      { label: "GAA Upload", href: ROUTES.gaaUpload, permission: "appropriations.manage" },
+      { label: "Appropriations", href: ROUTES.appropriations, permission: "appropriations.view" },
+      { label: "Allotments", href: ROUTES.allotments, permission: "allotments.view" },
     ],
   },
   {
@@ -70,6 +71,33 @@ export const NAVIGATION: NavItem[] = [
     children: BFARS_REPORTS.map((r) => ({ label: `BFARS ${r.number}`, href: ROUTES.bfars(r.id) })),
   },
   { id: "reports", label: "Reports", icon: FileText, href: ROUTES.reports },
+  {
+    id: "master-data",
+    label: "Master Data",
+    icon: Database,
+    matchPrefix: "/master-data",
+    children: [
+      { label: "Fiscal Years", href: ROUTES.fiscalYears, permission: "fiscal_years.view" },
+      { label: "Organizations", href: ROUTES.organizations, permission: "organizations.view" },
+      { label: "PREXC Items", href: ROUTES.prexcItems, permission: "prexc_items.view" },
+      { label: "UACS Objects", href: ROUTES.uacsObjects, permission: "uacs_objects.view" },
+      { label: "Fund Sources", href: ROUTES.fundSources, permission: "fund_sources.view" },
+      { label: "Allotment Classes", href: ROUTES.backendAllotmentClasses, permission: "allotment_classes.view" },
+    ],
+  },
+  {
+    id: "administration",
+    label: "Administration",
+    icon: ShieldCheck,
+    matchPrefix: "/administration",
+    children: [
+      { label: "Users", href: ROUTES.users, permission: "users.view" },
+      { label: "Roles & Permissions", href: ROUTES.roles, permission: "roles.view" },
+      { label: "Signatories", href: ROUTES.signatories, permission: "signatories.view" },
+      { label: "Approval Workflows", href: ROUTES.approvalWorkflows, permission: "approval_workflows.view" },
+      { label: "Agency Profile", href: ROUTES.agencyProfile, permission: "agency_profile.view" },
+    ],
+  },
   {
     id: "settings",
     label: "Settings",

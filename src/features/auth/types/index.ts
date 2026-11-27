@@ -4,16 +4,44 @@
  * SystemAuthController.php). See docs/AUTH_API_INTEGRATION.md.
  */
 
-/** Permission catalog of the backend (app/Enums/Permission.php). */
-export type Permission =
-  | "users.view"
-  | "users.create"
-  | "users.deactivate"
-  | "roles.view"
-  | "roles.manage"
-  | "roles.assign"
-  | "reports.view"
-  | "reports.share";
+/**
+ * Permission catalog of the backend (app/Enums/Permission.php). The shared
+ * ones exist in every system; the rest are eBudget-only.
+ */
+export const PERMISSIONS = [
+  "users.view",
+  "users.create",
+  "users.deactivate",
+  "roles.view",
+  "roles.manage",
+  "roles.assign",
+  "reports.view",
+  "reports.share",
+  "fiscal_years.view",
+  "fiscal_years.manage",
+  "prexc_items.view",
+  "prexc_items.manage",
+  "fund_sources.view",
+  "fund_sources.manage",
+  "organizations.view",
+  "organizations.manage",
+  "allotment_classes.view",
+  "allotment_classes.manage",
+  "uacs_objects.view",
+  "uacs_objects.manage",
+  "appropriations.view",
+  "appropriations.manage",
+  "allotments.view",
+  "allotments.manage",
+  "agency_profile.view",
+  "agency_profile.manage",
+  "approval_workflows.view",
+  "approval_workflows.manage",
+  "approval_requests.view",
+  "signatories.view",
+  "signatories.manage",
+] as const;
+export type Permission = (typeof PERMISSIONS)[number];
 
 /** Built-in role keys (app/Enums/SystemRole.php). Custom roles have `key: null`. */
 export type BuiltInRoleKey = "super_admin" | "admin";

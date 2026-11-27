@@ -1,4 +1,183 @@
-# API integration architecture — change summary (2026-11-05)
+# API integration
+
+The official endpoint-by-endpoint comparison is in
+[API_DOCUMENTATION_AUDIT.md](API_DOCUMENTATION_AUDIT.md) (2026-11-27, against the hosted OpenAPI
+docs at `http://139.59.96.9/docs/ebudget`: 94 of 94 endpoints correct and used by a page).
+
+## 2026-11-26: synchronised with backend-api `main` (`ea276fd`)
+
+The backend gained the eBudget data modules after the auth-only sync of 2026-11-12. This round
+integrates them. Details: [BACKEND_API_CHANGE_AUDIT.md](BACKEND_API_CHANGE_AUDIT.md) (every endpoint,
+classified) and [FRONTEND_API_INTEGRATION_AUDIT.md](FRONTEND_API_INTEGRATION_AUDIT.md) (every page →
+endpoint, with status).
+
+### Setup
+
+```env
+NEXT_PUBLIC_API_MODE=real            # backend modules use the backend
+NEXT_PUBLIC_AUTH_MODE=real
+NEXT_PUBLIC_API_BASE_URL=/api/backend # same-origin data proxy (default)
+NEXT_PUBLIC_API_DEMO_MODULES=true     # modules without endpoints keep demo data
+BACKEND_API_URL=http://localhost:8080/api/v1   # server-only
+BACKEND_SYSTEM=ebudget                         # server-only
+```
+
+Restart `npm run dev` after changing them. The backend needs its migrations (`make migrate`), the
+seeders (`make seed`: allotment classes, agency profile) and a queue worker listening on `imports`
+for the GAA import.
+
+### How requests flow
+
+```
+page → RTK Query hook (src/features/<module>/services/*Api.ts, injected into the one root api)
+     → backend service (src/services/backend/*.service.ts, requests marked requiresBackend)
+     → apiClient (src/lib/api/api-client.ts)
+     → /api/backend/<path>   (Next route handler, adds Authorization: Bearer from the httpOnly cookie)
+     → {BACKEND_API_URL}/ebudget/<path>
+```
+
+- The token never reaches the browser; the backend allows no browser origin in CORS, so the
+  same-origin proxy is the only data path. It passes JSON, multipart uploads and file downloads,
+  rewrites `Location`, clears the cookie on 401 and applies the same CSRF checks as the auth proxy.
+- Files behind the token (agency logo, e-signatures, allotment documents) are fetched through the
+  client and shown via blob URLs or saved as downloads (`backendPath()` maps their absolute URLs).
+- Errors keep the backend's problem `code` in `ApiError.problemCode` and its `detail` as the message;
+  422 field errors land on the form fields (GAA import: `lines.{i}.cells.{field}` → the row's cell).
+- Lists keep extra `meta` (`total_amount`) in `Paginated.meta`.
+- Paths of modules without backend endpoints (`DEMO_ONLY_PATHS`) are answered by the demo API in
+  real mode; those pages show a "Demo data" notice. In mock mode the backend-only pages say they
+  need `NEXT_PUBLIC_API_MODE=real` instead of reaching a demo handler with another contract.
+- Navigation items and actions are shown by `GET /auth/me` permissions (`useCan`, sidebar filter);
+  the backend still authorises every call.
+
+### Endpoint organisation
+
+| Layer | Where | Rule |
+|---|---|---|
+| Paths | `BACKEND` in `src/lib/api/endpoints.ts` | One constant per documented route, relative to `/api/v1/ebudget` |
+| Contracts | `src/features/<module>/types*.ts`, `src/types/backend.ts` | Field for field as the API resources; money is `PesoString`, ids `number` or `Ulid` |
+| Services | `src/services/backend/<module>.service.ts` | Use the `backend` helper (marks `requiresBackend`); no UI code |
+| Cache | `src/features/<module>/services/*Api.ts` | `api.injectEndpoints` on the one root api (`src/store/services/api.ts`), `queryFn: fromService(...)`, tags for lists (`LIST`) and items (`id`) |
+| UI | pages in `src/app/(dashboard)`, views in `src/features/<module>/components` | Only the generated hooks |
+
+### Using the hooks
+
+```tsx
+const fy = useBackendFiscalYear();                                   // header year → fiscal_year_id
+const lines = useGetAppropriationLinesQuery({ fiscal_year_id: fy.id, page, per_page: 15 }, { skip: !fy.id });
+const [create, { isLoading }] = useCreateAppropriationLineMutation();
+
+lines.data?.items;                       // rows
+lines.data?.meta?.total_amount;          // extra list meta
+lines.isFetching && !lines.currentData;  // first load → skeleton
+lines.error;                             // ApiError: status, code, message, fieldErrors, problemCode
+
+try {
+  await create(input).unwrap();          // invalidates the list automatically
+} catch (err) {
+  if (isApiError(err) && err.fieldErrors) setErrors(err.fieldErrors);      // 422 per field
+  else if (isApiError(err) && err.problemCode === "fiscal_year_not_open") …  // 409 by code
+}
+```
+
+Permissions for showing actions: `useCan("appropriations.manage")` (UI only; the backend decides).
+
+### Adding a future integration
+
+1. Read the endpoint in the OpenAPI docs (`/docs/ebudget`, JSON at `/docs/ebudget.json`) and its
+   form request / resource in `backend-api`.
+2. Add the path to `BACKEND`, the response and input types next to the feature.
+3. Add the service function with `backend.get/post/patch/put/delete/upload/download`.
+4. Inject the RTK endpoint with `providesTags` / `invalidatesTags`; export its hook.
+5. Use the hook in the page; map 422 `errors` onto the form and show `detail` for 409/403.
+6. If it replaces a demo module, remove its pattern from `DEMO_ONLY_PATHS` (and the demo notice).
+7. Add a test with a fetch stub in the documented format (see `tests/backend-services.test.ts`), and a
+   row in API_DOCUMENTATION_AUDIT.md.
+
+### Pages integrated
+
+Appropriations (list, create, new edit page), GAA Upload (validate → correct → configure → queued
+import with polling), Allotments (list, create / next tranche, detail with tranches, submit, cancel,
+documents), approval requests (`/approvals/{id}`, approve with e-signature, reject), Master Data
+(fiscal years with close/reopen/lock, organizations, PREXC items, UACS objects, fund sources,
+allotment classes), Administration (users with one-time password, roles & permissions,
+signatories, approval workflows, agency profile with logo), change password, report datasets &
+sharing, header fiscal-year list.
+
+Still on demo data (no backend endpoints): dashboard, obligations, RAO registries
+(RAOPS/RAOMO/RAOCO/RAOFE), BFARS 1–11, report catalog/history, notifications.
+
+### Files
+
+**Created:** `src/app/api/backend/[...path]/route.ts`, `src/app/api/auth/password/route.ts`;
+`src/services/backend/*` (http, master-data, appropriations, allotments, approvals, administration,
+access); `src/types/backend.ts`; `src/features/master-data/*`, `src/features/access/*`,
+`src/features/administration/*`, `src/features/approvals/*`;
+`src/features/appropriations/{types/lines.ts, services/appropriationLinesApi.ts, components/lines/*,
+components/gaa-upload/Gaa{Upload,Validate,Configure,Import}Step.tsx}`;
+`src/features/allotments/{types/records.ts, services/allotmentRecordsApi.ts, components/records/*}`;
+`src/components/backend/*` (ResourceManager, PromptDialog, AuthorizedImage, DataSourceNotice);
+`src/hooks/{useCan,useBackendFiscalYear}.ts`; pages under `src/app/(dashboard)/{master-data,
+administration, approvals}`, `appropriations/appropriations/[lineId]/edit`; layouts with the demo
+notice for obligations, allotment classes and BFARS; `tests/backend-proxy.test.ts`,
+`tests/backend-services.test.ts`; the two audit docs.
+
+**Modified:** `src/config/api.config.ts` (proxy default, `demoModules`, `DEMO_ONLY_PATHS`),
+`src/lib/api/{api-client,api-error,api-response,api-types,endpoints}.ts`,
+`src/lib/server/backend-auth.ts`, `src/store/services/api.ts` (tag types),
+`src/store/slices/filtersSlice.ts`, `src/components/layout/{Header,Sidebar}.tsx`,
+`src/config/navigation.ts`, `src/lib/constants/routes.ts`, `src/features/auth/types` (full
+permission catalog), settings (password change), GAA wizard slice/stepper/workflow, the five
+appropriation/allotment page files, dashboard and reports views (notices, sharing card),
+`src/hooks/useRoutePrefetch.ts`, `src/mocks/handlers/auth.ts` (demo users hold every permission),
+`StatusBadge`, `.env.example`, `Dockerfile`, `docker-compose.{dev,prod}.yml`, `docker/README.md`,
+`tests/api-client.real.test.ts`.
+
+**Removed:** the demo-contract appropriation, GAA batch and allotment workflow views and their
+schemas (list in the frontend audit).
+
+### Checks (2026-11-26)
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` | Clean |
+| `npx eslint src tests` | Clean |
+| `npx vitest run` | 97 passed (8 files, 2026-11-27) |
+| `next build` (real mode, in a copy so the running dev server was untouched) | Succeeded, all 77 routes |
+
+### Runtime verification
+
+**2026-11-27: verified live on the local backend** — 91 of 94 endpoints called through the frontend proxies, success and error paths, and 23 pages opened signed in. Not called: fiscal-year lock (permanent), deleting an allotment class (only the seeded, in-use ones exist), deleting a report share (no eBudget datasets exist to share). A successful password change was skipped to keep your password; its validation path was tested. One mismatch found and fixed (attachment upload response). Details and the test data left behind: [API_DOCUMENTATION_AUDIT.md](API_DOCUMENTATION_AUDIT.md#live-verification-on-the-local-backend-2026-11-27).
+
+Earlier notes:
+
+2026-11-27: read-only checks against the hosted server `139.59.96.9` passed through the frontend's
+auth and data proxies (documented 401/422 problem details, cookie cleared on a rejected token); see
+API_DOCUMENTATION_AUDIT.md. Signed-in flows still untested: no application account for the hosted
+server, and the local stack's `make migrate` needs `AUDIT_CHAIN_KEY` in the backend `.env`.
+
+Not done against the live backend: on 2026-11-26 Docker was stopped and the `laravel-api`
+containers didn't exist; starting them needs `make build`, `make up`, `make migrate` and `make seed`,
+which change the local backend database, and that was not approved. So every backend integration
+is verified by unit tests with fetch stubs in the backend's documented formats, TypeScript and the
+production build, but **no request has reached the real backend**. Status in the frontend audit is
+"Integrated (not runtime-tested)" for all of them. To verify: start the stack, sign in, then walk
+Master Data → Fiscal Years (add FY 2026) → master data → Appropriations / GAA Upload → Allotments →
+Approval Workflows (an active `allotment` workflow) → submit and approve a tranche.
+
+### Remaining issues
+
+- No approval inbox: the backend can't list requests awaiting a user.
+- Users list has no backend search (filters the current page); signatory, workflow and PREXC parent
+  pickers load the first 100 records.
+- Allotments list: released/pending cards cover the visible page only (the list has no totals for them).
+- The old appropriations CSV export, column picker and charts were removed with the demo contract.
+- Dashboard, obligations, RAO registries, BFARS, report catalog/history and notifications await
+  backend endpoints.
+
+---
+
+## 2026-11-05: API integration architecture (mock/real switch)
 
 ## How to switch to a real backend
 

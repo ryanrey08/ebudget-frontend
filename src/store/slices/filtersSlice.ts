@@ -3,7 +3,8 @@ import { AGENCIES, DEFAULT_FISCAL_YEAR, type AgencyId, type FiscalYear } from "@
 
 /** Selections in the header that scope data across every module. */
 export interface FiltersState {
-  fiscalYear: FiscalYear;
+  /** A year of FISCAL_YEARS (demo data) or, in real mode, any backend fiscal year. */
+  fiscalYear: FiscalYear | number;
   agencyId: AgencyId;
 }
 
@@ -13,7 +14,7 @@ const filtersSlice = createSlice({
   name: "filters",
   initialState,
   reducers: {
-    fiscalYearChanged: (state, action: PayloadAction<FiscalYear>) => {
+    fiscalYearChanged: (state, action: PayloadAction<FiscalYear | number>) => {
       state.fiscalYear = action.payload;
     },
     agencyChanged: (state, action: PayloadAction<AgencyId>) => {
